@@ -234,11 +234,31 @@ class Client:
 
         v = resp.json()
         return v
-        #if v["success"] != True:
-        #    raise Exception("Unsuccessful API call")
 
-        #return v["data"]
+    def confirmimportjobs(self, jobid) -> str:
+        now = datetime.utcnow()
+        date = get_x_sn_date(now)
+        path = f'/solaruser/api/v1/sec/user/import/jobs/{jobid}/confirm'
 
+        headers = { "host": "data.solarnetwork.net", "x-sn-date": date}
+
+
+        auth = generate_auth_header(
+            self.token, self.secret, "GET", path, "", headers, "", now
+        )
+
+        url = f"https://data.solarnetwork.net/solaruser/api/v1/sec/user/import/jobs/{jobid}/confirm"
+        resp = requests.get(
+            url,
+            headers={
+                "host": "data.solarnetwork.net",
+                "x-sn-date": date,
+                "Authorization": auth,
+            },
+        )
+
+        v = resp.json()
+        return v
 
 
     def import_data(self, description, importdata ):

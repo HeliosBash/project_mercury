@@ -14,20 +14,21 @@ def solnet_import():
 
     service_properties = {
         "headerRowCount": "1",
-        "dateColumnsValue": "3",
         "dateFormat": "yyyy-MM-dd HH:mm:ss",
         "nodeIdColumn": "1",
-        "sourceIdColumn": "2"
+        "sourceIdColumn": "2",
+        "dateColumnsValue": "3",
+        "instantaneousDataColumns": "4",
+        "accumulatingDataColumns": "5"
     }
 
     innername = node + '_' + sourceids + '_' + 'Input'
     inner = {
         "name": innername,
         "timeZoneId": timezone,
-        "serviceIdentifier": "net.solarnetwork.central.datum.imp.standard.BasicCsvDatumImportInputFormatService",
+        "serviceIdentifier": "net.solarnetwork.central.datum.imp.standard.SimpleCsvDatumImportInputFormatService",
         "serviceProperties": service_properties
     }
-    
     outername = node + '_' + sourceids + '_' + 'Import'
     
     outer = {
@@ -35,7 +36,6 @@ def solnet_import():
         "stage": True,
         "inputConfiguration": inner
     }
-
 
     openfile = open(filepath, 'r')
     csv_data = (openfile.read())

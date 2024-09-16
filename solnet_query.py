@@ -16,14 +16,12 @@ def solar_query():
         param_str = "endDate=%s&max=%s&nodeId=%s&offset=0&sourceIds=%s&startDate=%s" % (enddate, maxoutput, node, sourceids, startdate)
         client = Client(token,secret)
         response = client.solarquery(param_str)
-        
         print ('Created,localDate,localTime,nodeId,sourceId,irradiance,irradianceHours')
-        
-        for element in response['results']:
-           try:
-               print (element['created'],element['localDate'],element['localTime'],element['nodeId'],element['sourceId'],element['irradiance'],element['irradianceHours'],sep=',')
-           except:
-               pass
+        for element in response['results']:    
+            try:
+                print (element['created'],element['localDate'],element['localTime'],element['nodeId'],element['sourceId'],element['irradiance'],element['irradianceHours'],sep=',')
+            except: 
+                print (element['created'],element['localDate'],element['localTime'],element['nodeId'],element['sourceId'],element['irradiance'],"",sep=',')
     else : 
         param_str = "aggregation=%s&endDate=%s&max=%s&nodeId=%s&offset=0&sourceIds=%s&startDate=%s" % (aggregate, enddate, maxoutput, node, sourceids, startdate)
         client = Client(token, secret)
@@ -32,8 +30,8 @@ def solar_query():
         for element in response['results']:
            try:
                print (element['created'],element['localDate'],element['localTime'],element['nodeId'],element['sourceId'],element['irradiance_min'],element['irradiance_max'],element['irradiance'],element['irradianceHours'],sep=',')
-           except:
-               pass
+           except: 
+               print (element['created'],element['localDate'],element['localTime'],element['nodeId'],element['sourceId'],element['irradiance'],"",sep=',')
 
 if __name__ == "__main__":
     solar_query()

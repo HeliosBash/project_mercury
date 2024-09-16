@@ -14,6 +14,7 @@ def solar_query():
         param_str = "aggregationKey=0&endDate=%s&nodeIds=%s&sourceIds=%s&startDate=%s" % ( enddate, node, sourceids, startdate )
         client = Client(sys.argv[5],sys.argv[6])
         response = client.expirepreview(param_str)
+        #print (response)
         print (response['datumCount'])
 
 if __name__ == "__main__":
