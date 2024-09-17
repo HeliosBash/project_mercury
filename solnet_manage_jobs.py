@@ -83,7 +83,7 @@ if __name__ == "__main__":
                 elif (job == "import") and (action == "delete"):
                     delete_import_jobs(token,secret,jobid)
                 elif (job == "import") and (action == "confirm"):
-                    print ("import","confirm",token,secret,jobid)
+                    confirm_import_jobs(token,secret,jobid)
                 else:
                     print ("Unknown job and action")
             else: 

@@ -244,11 +244,11 @@ class Client:
 
 
         auth = generate_auth_header(
-            self.token, self.secret, "GET", path, "", headers, "", now
+            self.token, self.secret, "POST", path, "", headers, "", now
         )
 
         url = f"https://data.solarnetwork.net/solaruser/api/v1/sec/user/import/jobs/{jobid}/confirm"
-        resp = requests.get(
+        resp = requests.post(
             url,
             headers={
                 "host": "data.solarnetwork.net",

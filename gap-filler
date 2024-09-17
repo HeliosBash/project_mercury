@@ -160,53 +160,57 @@ else
 	
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py $node $sourceids $startdate $enddate FiveMinute $maxoutput $token $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
 	
 	first_row_minutes=0
 	gap_in_minutes=0
 	minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
 	
-	python3 solnet_query.py $node $sourceids $startdate $enddate FiveMinute $maxoutput $token $secret > $minute_data_path
+	python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret > $minute_data_path
 	sed -i '1d' $minute_data_path
 	sleep 1
 	
-	while IFS=, read created localDate localTime nodeId sourceId irradiance_min irradiance_max irradiance irradianceHours
+	while IFS=, read createdUTCDate localDate localTime nodeId sourceId irradiance_min irradiance_max irradiance irradianceHours
 	do
         	if [[ $first_row_minutes == 0 ]] ; then
 			first_row_minutes=1
-	                datetime="$localDate $localTime"
+			datetime=$(echo $createdUTCDate | sed "s/Z//g") 
                 	datetime_epoch=$(date -d "$datetime" +%s)
 			prevdatetime_epoch=$datetime_epoch
-                	prevMinutes="$created,$datetime"
+			prevUTCDate=$createdUTCDate
+			#echo "$datetime"
         	else
-                	datetime="$localDate $localTime"
+                	datetime=$(echo $createdUTCDate | sed "s/Z//g")
 			datetime_epoch=$(date -d "$datetime" +%s)
 			minute_difference=$((datetime_epoch - prevdatetime_epoch))
-			if [ $minute_difference -gt 3600 ] ; then
-				
-				next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$localDate,$localTime" | awk '{print $1 }')
-				start_gap_line_number=$((next_possible_gap_line_number-1))
-                                irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
-					while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
-                                	do
-                                        	irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}')
-                                        	if [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]] ; then
+			#echo "$datetime $minute_difference"
+			if [ $minute_difference -gt 60 ] ; then
+				#if [ $minute_difference -gt 1800 ] ; then
+					next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
+					start_gap_line_number=$((next_possible_gap_line_number-1))
+                                	irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+					        echo "irradianceHours = $irradianceHours"
+						while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
+                                		do
                                                 	next_possible_gap_line_number=$((next_possible_gap_line_number+1))
-                                        	fi
-                                	done
-                                start_gap_created=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
-				end_gap_created=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
-                                localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
-                                localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
+							irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+                                		done
+                                	start_gap_created=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+					end_gap_created=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+                                	localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
+                                	localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
 
-                                datetime="$localDate $localTime"
+                                	datetime=$(echo $createdUTCDate | sed "s/Z//g")
 
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
-				start_gap=$start_gap_created
-				end_gap=$end_gap_created
+                        		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
+					start_gap=$start_gap_created
+					end_gap=$end_gap_created
 
-				gap_in_minutes=1
-                        	break
+					gap_in_minutes=1
+                        		break
+				#else
+				#	:
+				#fi
 			else
 				
 				prevdatetime_epoch=$datetime_epoch
@@ -222,11 +226,11 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap: $start_gap" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap: $end_gap" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 4*************" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for data between the gap. Adding 30 second offset" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for data between the gap. Adding 5 second offset" 2>&1 | tee -a $log_path
 		start_gap_epoch=$(date -d "$start_gap" +%s)
 		end_gap_epoch=$(date -d "$end_gap" +%s)
-                new_start_gap_epoch=$((start_gap_epoch + 30))
-                new_end_gap_epoch=$((end_gap_epoch - 30))
+                new_start_gap_epoch=$((start_gap_epoch + 5))
+                new_end_gap_epoch=$((end_gap_epoch - 5))
 		new_start_gap=$(date --date @$new_start_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
 		new_end_gap=$(date --date @$new_end_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
 		gap_num_days=$((end_gap_epoch - start_gap_epoch))
@@ -395,7 +399,7 @@ else
        					 ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
         				if [[ $a = 0 ]] ; then
             					e2=$ghi
-            					echo "node,source,date,irradiance,wattHours" > $irradiance_data_path
+            					echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
             					echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
 						#echo "$node,$sid,$ddt,$ghi,${ghi}\\r\\n" >> $irradiance_data_path
             					a=1
@@ -429,11 +433,12 @@ else
 
         				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Enter Total Enery in KWH: " 
         				read total_energy < /dev/tty
-
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Enter Source ID that requires Backfill Data: "
+					read eesid < /dev/tty
         				echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" | tee -a $log_path
 
         				prevenergyinwatts=0
-        				echo "NodeID,SourceID,Date,ElectricalEnergyWattHours" > $electrical_energy_data_path
+        				echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
         				while IFS=, read ddt irr irh
         				do
                 				ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc)
@@ -441,7 +446,7 @@ else
                 				energyinwatts=$(echo "scale=8 ; $energy * 1000" | bc)
                 				watthours=$(echo "scale=8 ; $prevenergyinwatts + $energyinwatts" | bc )
                 				prevenergyinwatts=$watthours
-                				echo "$node,$sid,$ddt,$watthours" >> $electrical_energy_data_path
+                				echo "$node,$eesid,$ddt,$energyinwatts,$watthours" >> $electrical_energy_data_path
 
         				done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
 
