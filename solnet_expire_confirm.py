@@ -10,8 +10,8 @@ token = sys.argv[5]
 secret = sys.argv[6]
 
 def solar_query():
-
-        param_str = "aggregationKey=0&endDate=%s&nodeIds=%s&sourceIds=%s&startDate=%s" % ( enddate, node, sourceids, startdate )
+        param_str = "aggregationKey=0&localEndDate=%s&localStartDate=%s&nodeIds=%s&sourceIds=%s" % ( enddate, startdate, node, sourceids )
+        #param_str = "aggregationKey=0&endDate=%s&nodeIds=%s&sourceIds=%s&startDate=%s" % ( enddate, node, sourceids, startdate )
         client = Client(sys.argv[5],sys.argv[6])
         response = client.expireconfirm(param_str)
         print (response)

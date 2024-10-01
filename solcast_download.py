@@ -24,7 +24,6 @@ url = "https://api.solcast.com.au/data/historic/radiation_and_weather?latitude=%
 response = requests.get(url, headers=headers)
 
 data = response.json()
-
 for i in data['estimated_actuals']:
    period_end=i["period_end"]
    formatted_period_end=period_end.replace('+00:00','Z')

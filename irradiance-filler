@@ -1,0 +1,212 @@
+#!/bin/bash
+
+node=$1
+sid=$2
+sourceids=$(echo $sid | sed "s/\//%2F/g")
+timezone=$3
+localstartdate=""
+localenddate=""
+maxoutput=$6
+lat=$7
+long=$8
+solcast_api_token=$9
+token=${10}
+secret=${11}
+log_path="logs/identify-gap-data-run.log"
+
+check_timezone=$(awk '/^Z/ { print $2 }; /^L/ { print $3 }' /usr/share/zoneinfo/tzdata.zi | grep -w $timezone)
+
+while [ -z "$check_timezone" ]
+do
+    echo -n "$(date +'%Y-%m-%d %H:%M:%S') Not a valid timezone. Enter timezone:  "
+    read timezone < /dev/tty
+    check_timezone=$(awk '/^Z/ { print $2 }; /^L/ { print $3 }' /usr/share/zoneinfo/tzdata.zi | grep -w $timezone)
+
+done
+
+localstartdate=$(TZ=$timezone date -d "$4 00:00:00" )
+localenddate=$(TZ=$timezone date -d "$5 23:59:59" ) 
+
+utcstartdate=$(TZ=UTC date -d "$localstartdate" +'%Y-%m-%d %H:%M:%SZ')
+utcenddate=$(TZ=UTC date -d "$localenddate" +'%Y-%m-%d %H:%M:%SZ')
+
+startdate=$(echo $utcstartdate | sed 's/ /T/g;s/:/%3A/g')
+enddate=$(echo $utcenddate | sed 's/ /T/g;s/:/%3A/g')
+
+echo "$(date +'%Y-%m-%d %H:%M:%S') Local : $localstartdate" 2>&1 | tee -a $log_path
+echo "$(date +'%Y-%m-%d %H:%M:%S') UTC   : $utcstartdate" 2>&1 | tee -a $log_path
+echo "$(date +'%Y-%m-%d %H:%M:%S') UTC Formatted : $startdate" 2>&1 | tee -a $log_path
+echo "$(date +'%Y-%m-%d %H:%M:%S') Local : $localenddate" 2>&1 | tee -a $log_path
+echo "$(date +'%Y-%m-%d %H:%M:%S') UTC   : $utcenddate" 2>&1 | tee -a $log_path
+echo "$(date +'%Y-%m-%d %H:%M:%S') UTC Formatted : $enddate" 2>&1 | tee -a $log_path
+
+echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for any data in specified date range " 2>&1 | tee -a $log_path
+echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+
+python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum
+
+datum_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum | wc -l)    
+
+if [ $datum_count -gt 0 ]; then
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Aborting, datum present, adjust date range" 2>&1 | tee -a $log_path
+
+else
+	echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" 2>&1 | tee -a $log_path
+	
+        solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_script.sh"
+        solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
+        rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
+
+	start_date_epoch=$(date -d "$utcstartdate" +%s)
+        end_date_epoch=$(date -d "$utcenddate" +%s)
+
+	date_range_num_days=$((end_date_epoch - start_date_epoch))
+
+	if [ $date_range_num_days -gt 2592000 ]; then
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple solcast queries" 2>&1 | tee -a $log_path
+		solcast_start=$utcstartdate
+                solcast_end=$utcenddate
+                solcast_partial=$(date --date "$utcstartdate + 30 days" +'%Y-%m-%d 23:59:59Z')
+
+		echo "python3 solcast_download.py $lat $long $(echo $solcast_start | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g' ) $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
+
+		solcast_num_days=$date_range_num_days
+
+		while [ $solcast_num_days -gt 2592000 ]
+                do
+			prev_solcast_partial=$(date --date "$solcast_partial + 1 day" +'%Y-%m-%d 00:00:00Z')
+                        solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
+                        solcast_end_epoch=$(date -d "$solcast_end" +%s )
+
+			solcast_num_days=$((solcast_end_epoch - solcast_partial_epoch))
+			if [ $solcast_num_days -gt 2592000 ]; then
+				solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59Z' )
+                                echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+			else
+				echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $(echo $solcast_end  | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+                                break
+                        fi
+		done
+	else
+                        echo "python3 solcast_download.py $lat $long $startdate $enddate $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+	fi
+
+	while true
+        do
+          echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to proceed to download solcast (Y/N)?" 2>&1 | tee -a $log_path
+          read solcast_continue_result < /dev/tty
+
+          if [[ "${solcast_continue_result^^}" == "Y" || "${solcast_continue_result^^}" == "N" ]] ; then
+
+             echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $solcast_continue_result" 2>&1 | tee -a $log_path
+             break;
+          fi
+       done
+	
+
+       if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
+
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+            sleep 10
+            /bin/bash $solcast_script_path
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Process Completed" | tee -a $log_path
+       else
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Solcast Data was not downloaded. Process Completed" | tee -a $log_path
+       fi
+
+       echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
+
+       while true
+       do
+         echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to proceed to compute irradiance (Y/N)?" 2>&1 | tee -a $log_path
+         read computeirradiance_continue_result < /dev/tty
+
+         if [[ "${computeirradiance_continue_result^^}" == "Y" || "${computeirradiance_continue_result^^}" == "N" ]] ; then
+
+           echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $computeirradiance_continue_result" 2>&1 | tee -a $log_path
+           break;
+         fi
+      done
+
+      if [[ "${computeirradiance_continue_result^^}" == "Y" ]] ; then
+	 runtime=$(date +"%Y%m%d_%H%M%S")
+         irradiance_data_path="data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}.csv"
+	 a=0
+         echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
+         while IFS=, read periodend periodstart period ghi
+         do
+             ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
+             if [[ $a = 0 ]] ; then
+                 e2=$ghi
+                 echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
+                 echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
+                 a=1
+             else
+                 d312=$(echo "scale=4; $ghi/12" | bc)
+                 nir=$(echo "$e2 + $d312" | bc)
+                 e2=$nir
+                 echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
+             fi
+
+        done < $solcast_csv_path
+	start_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
+        end_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')	
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Stitching Values for SolarNetwork Event 1" | tee -a $log_path
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+	
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $(TZ=$timezone date -d "$localstartdate" +'%Y-%m-%d %H:%M:%S')" | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $(TZ=$timezone date -d "$localenddate" +'%Y-%m-%d %H:%M:%S')" | tee -a $log_path
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_irradiancehours" | tee -a $log_path
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" | tee -a $log_path
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file node${node}_PYRGAP_SolNetIMport_${runtime}.csv" | tee -a $log_path
+        dos2unix $irradiance_data_path
+        sleep 1
+        xz -k $irradiance_data_path
+
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Process completed" | tee -a $log_path
+
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" 2>&1 | tee -a $log_path
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path
+        filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')
+        filsesizemb=$(($filesizebytes/1048576))
+
+        if [ $filsesizemb -lt 20 ] ; then
+           echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
+           echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret"
+		while true
+                do
+                   	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
+                   	read continue_result < /dev/tty
+
+                   	if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
+                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                      	break;
+                   	fi
+                 done
+		 if [[ "${continue_result^^}" == "Y" ]] ; then
+
+		     echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+                     sleep 10
+		     python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret
+	          else
+                      echo "$(date +'%Y-%m-%d %H:%M:%S') Process Complete" 2>&1 | tee -a $log_path
+                  fi
+             else
+                  echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
+                  echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process Aborted. "
+	      fi
+
+
+
+     else
+
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Process Aborted" | tee -a $log_path
+     fi
+
+
+fi
+
