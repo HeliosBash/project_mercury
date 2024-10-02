@@ -56,14 +56,15 @@ else
 	
         solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_script.sh"
         solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
-        rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
+        >$solcast_script_path
+	rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
 
 	start_date_epoch=$(date -d "$utcstartdate" +%s)
         end_date_epoch=$(date -d "$utcenddate" +%s)
 
 	date_range_num_days=$((end_date_epoch - start_date_epoch))
 
-	if [ $date_range_num_days -gt 2592000 ]; then
+	if [ $date_range_num_days -gt 2606399 ]; then
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple solcast queries" 2>&1 | tee -a $log_path
 		solcast_start=$utcstartdate
                 solcast_end=$utcenddate
@@ -73,14 +74,14 @@ else
 
 		solcast_num_days=$date_range_num_days
 
-		while [ $solcast_num_days -gt 2592000 ]
+		while [ $solcast_num_days -gt 2606399 ]
                 do
 			prev_solcast_partial=$(date --date "$solcast_partial + 1 day" +'%Y-%m-%d 00:00:00Z')
                         solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
-                        solcast_end_epoch=$(date -d "$solcast_end" +%s )
+			solcast_end_epoch=$(date -d "$solcast_end" +%s )
 
 			solcast_num_days=$((solcast_end_epoch - solcast_partial_epoch))
-			if [ $solcast_num_days -gt 2592000 ]; then
+			if [ $solcast_num_days -gt 2606399 ]; then
 				solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59Z' )
                                 echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
 			else
@@ -88,6 +89,8 @@ else
                                 break
                         fi
 		done
+	
+	
 	else
                         echo "python3 solcast_download.py $lat $long $startdate $enddate $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
 	fi
@@ -191,7 +194,9 @@ else
 
 		     echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
                      sleep 10
-		     python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret
+		     jobid=$(python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret)
+		     echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
+		     echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
 	          else
                       echo "$(date +'%Y-%m-%d %H:%M:%S') Process Complete" 2>&1 | tee -a $log_path
                   fi

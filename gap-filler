@@ -319,8 +319,8 @@ else
 		solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_script.sh"
 		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
 		rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
-		
-		if [ $gap_num_days -gt 2592000 ]; then
+		>$solcast_script_path
+		if [ $gap_num_days -gt 2606399 ]; then
 			
 			solcast_start=$(date --date "$start_gap" +'%Y-%m-%d 00:00:00' )
                         solcast_end=$(date --date "$end_gap" +'%Y-%m-%d 23:59:59' )
@@ -330,14 +330,14 @@ else
 			
 			solcast_num_days=$gap_num_days
 
-			while [ $solcast_num_days -gt 2592000 ]
+			while [ $solcast_num_days -gt 2606399 ]
 			do
 				prev_solcast_partial=$(date --date "$solcast_partial + 1 day" +'%Y-%m-%d 00:00:00')
 				solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
 		                solcast_end_epoch=$(date -d "$solcast_end" +%s )
 				
 				solcast_num_days=$((solcast_end_epoch - solcast_partial_epoch))
-				if [ $solcast_num_days -gt 2592000 ]; then
+				if [ $solcast_num_days -gt 2606399 ]; then
 					solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59' )
 					echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
 				else
@@ -570,8 +570,12 @@ else
 				
 						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
                                 		sleep 10
+					
+						#python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret
+						jobid=$(python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret)
+                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
+                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
 
-						python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret
 						if [ $backfillimport -eq 1 ] ; then
                                                 	python3 solnet_import.py $node $eesourceids UTC $electrical_energy_data_path $token $secret
                                         	fi
