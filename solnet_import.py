@@ -42,7 +42,7 @@ def solnet_import():
     openfile.close()
     
     resp = client.import_data(outer, csv_data)
-    print (resp)
+    print (resp['jobId'])
 
 if __name__ == "__main__":
     solnet_import()
