@@ -399,9 +399,8 @@ else
 				endperiodepoch=$(date -d "$endperiod" +%s)
 				a=0
 
-				irradiance_data_path="data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}.csv"
+				irradiance_data_path="data/${node}_${sourceids}_${startperiod}_${endperiod}_PYRGAP_SolNetIMport_${runtime}.csv"
 				electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
-
 				ghitotal=0
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Trimming File for periods between $startperiod and $endperiod" | tee -a $log_path
 				tail -n +2 $solcast_csv_path | while IFS=, read periodend periodstart period ghi

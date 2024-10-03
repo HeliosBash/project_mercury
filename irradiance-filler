@@ -14,6 +14,8 @@ token=${10}
 secret=${11}
 log_path="logs/identify-gap-data-run.log"
 
+# Check timezone format if its valid
+
 check_timezone=$(awk '/^Z/ { print $2 }; /^L/ { print $3 }' /usr/share/zoneinfo/tzdata.zi | grep -w $timezone)
 
 while [ -z "$check_timezone" ]
@@ -24,11 +26,15 @@ do
 
 done
 
+# Converts the entered date to local and then utc
+
 localstartdate=$(TZ=$timezone date -d "$4 00:00:00" )
 localenddate=$(TZ=$timezone date -d "$5 23:59:59" ) 
 
 utcstartdate=$(TZ=UTC date -d "$localstartdate" +'%Y-%m-%d %H:%M:%SZ')
 utcenddate=$(TZ=UTC date -d "$localenddate" +'%Y-%m-%d %H:%M:%SZ')
+
+# Formats the date with URL encoding
 
 startdate=$(echo $utcstartdate | sed 's/ /T/g;s/:/%3A/g')
 enddate=$(echo $utcenddate | sed 's/ /T/g;s/:/%3A/g')
@@ -42,6 +48,8 @@ echo "$(date +'%Y-%m-%d %H:%M:%S') UTC Formatted : $enddate" 2>&1 | tee -a $log_
 
 echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for any data in specified date range " 2>&1 | tee -a $log_path
 echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+
+# Checks date range for any existing datum and aborts if there are any
 
 python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum
 
@@ -134,7 +142,7 @@ else
 
       if [[ "${computeirradiance_continue_result^^}" == "Y" ]] ; then
 	 runtime=$(date +"%Y%m%d_%H%M%S")
-         irradiance_data_path="data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}.csv"
+         irradiance_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_PYRGAP_SolNetIMport_${runtime}.csv"
 	 a=0
          echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
          while IFS=, read periodend periodstart period ghi
