@@ -348,7 +348,7 @@ else
 		else
 			solcast_start=$(date --date "$start_gap" +'%Y-%m-%d %H:%M:%S' | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g' )
                         solcast_end=$(date --date "$end_gap" +'%Y-%m-%d %H:%M:%S' |  sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g' )
-			echo "python3 solcast_download.py $lat $long $solcast_start $solcast_end $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+			echo "python3 solcast_download.py $lat $long $solcast_start $solcast_end $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 		fi
 
 			while true

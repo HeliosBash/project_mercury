@@ -100,7 +100,7 @@ else
 	
 	
 	else
-                        echo "python3 solcast_download.py $lat $long $startdate $enddate $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+                        echo "python3 solcast_download.py $lat $long $startdate $enddate $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 	fi
 
 	while true
@@ -118,8 +118,8 @@ else
 
        if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
 
-            echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-            sleep 10
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+            sleep 5
             /bin/bash $solcast_script_path
             echo "$(date +'%Y-%m-%d %H:%M:%S') Process Completed" | tee -a $log_path
        else
@@ -200,20 +200,36 @@ else
                  done
 		 if [[ "${continue_result^^}" == "Y" ]] ; then
 
-		     echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-                     sleep 10
+		     echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+                     sleep 5
 		     jobid=$(python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret)
-		     echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
-		     echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
-	          else
+		     echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data"
+		     python3 solnet_manage_jobs.py import preview $token $secret $jobid
+		     echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
+		     while true
+                     do
+                        echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
+                        read confirm_result < /dev/tty
+
+                        if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                        break;
+                        fi
+                     done
+                     if [[ "${confirm_result^^}" == "Y" ]] ; then
+			     echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
+			     python3 solnet_manage_jobs.py import confirm $token $secret $jobid
+		     else
+			     echo  "$(date +'%Y-%m-%d %H:%M:%S') Process Complete"
+		     fi
+
+	         else
                       echo "$(date +'%Y-%m-%d %H:%M:%S') Process Complete" 2>&1 | tee -a $log_path
-                  fi
+                 fi
              else
                   echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
                   echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process Aborted. "
-	      fi
-
-
+	     fi
 
      else
 
