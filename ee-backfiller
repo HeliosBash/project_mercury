@@ -1,0 +1,512 @@
+#!/bin/bash
+
+node=$1
+sid=$2
+sourceids=$(echo $sid | sed "s/\//%2F/g")
+startdate="$3T00%3A00"
+enddate="$4T23%3A59"
+maxoutput=$5
+lat=$6
+long=$7
+solcast_api_token=$8
+token=$9
+secret=${10} 
+log_path="logs/identify-gap-data-run.log"
+
+if [ "$#" -ne 10 ]; then
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: gap-filler [ node ] [ sourceids ] [ startdate ] [ enddate ] [ maxoutput ] [ lat ] [ long ] [ solcast_token ] [ solne_token ] [ solnet_secret ]" 2>&1 | tee -a $log_path
+
+else
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 ee_solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput" 2>&1 | tee -a $log_path
+	
+	first_row_days=0
+	gap_in_days=0
+	day_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_days"
+
+	python3 ee_solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput $token $secret > $day_data_path
+	
+	sed -i '1d' $day_data_path
+	sleep 1
+
+	while IFS=, read createdUTCDate nodeId sourceId localDate localTime watts current voltage current_a current_b current_c frequency volate_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca lineVoltage powerFactor apparentPower reactivePower wattHours wattHoursReverse phase
+	do
+		if [[ $first_row_days == 0 ]] ; then
+			first_row_days=1
+			expected_next=$(date -d "$localDate + 1 day" +%Y-%m-%d)
+			prevlocalDate="$localDate"
+			prevUTCDate="$createdUTCDate"
+		else
+			if [[ "$localDate" != "$expected_next" ]] ; then
+				start_gap_line_number=$(cat -n $day_data_path | grep $prevlocalDate | awk '{print $1 }')
+				next_possible_gap_line_number=$((start_gap_line_number+1))
+
+				while [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
+				do
+        				wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | awk -F "," '{print $(NF-2)}')
+                			next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+				done
+
+				createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
+				localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
+				startdate=$(echo $prevUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
+        			enddate=$(echo $createdUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
+				starthour=$( echo $startdate | sed "s/04%3A00%3A00/00%3A00%3A00/g")
+			        endhour=$( echo $enddate | sed "s/04%3A00%3A00/23%3A59%3A00/g" )
+
+				gap_in_days=1
+				break
+			else
+				prevUTCDate="$createdUTCDate"
+				prevlocalDate="$localDate"
+				expected_next=$(date -d "$localDate + 1 day" +%Y-%m-%d)
+			fi
+		fi
+	done < $day_data_path
+
+	if [ $gap_in_days -eq 1 ] ; then
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Found between $startdate and $enddate" 2>&1 | tee -a $log_path
+	else
+		echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Days" 2>&1 | tee -a $log_path
+		starthour=$( echo $startdate | sed "s/04%3A00%3A00/00%3A00%3A00/g")
+                endhour=$( echo $enddate | sed "s/04%3A00%3A00/23%3A59%3A00/g" )
+
+	fi 
+
+
+		
+	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 2*************" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Hours $starthour and $endhour" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 ee_solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput" 2>&1 | tee -a $log_path
+
+	first_row_hours=0
+	gap_in_hours=0
+	hour_data_path="data/${node}_${sourceids}_${starthour}_${endhour}_datum_hours"
+
+	python3 ee_solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput $token $secret > $hour_data_path
+	sed -i '1d' $hour_data_path
+	sleep 1
+	while IFS=, read createdUTCDate nodeId sourceId localDate localTime watts current voltage current_a current_b current_c frequency volate_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca lineVoltage powerFactor apparentPower reactivePower wattHours wattHoursReverse phase
+        do
+        	if [[ $first_row_hours == 0 ]] ; then
+			first_row_hours=1
+			datetime="$localDate $localTime"
+			datetime_epoch=$(date -d "$datetime" +%s)
+			newhour=$((datetime_epoch + 3600))
+                	expected_next_hour=$(date --date @$newhour +"%Y-%m-%d %H:00")
+ 		
+			prevUTCDate=$createdUTCDate
+			prevlocalDate="$localDate"
+			prevlocalTime="$localTime"
+			prevdatetime=$datetime 
+        	else
+
+			datetime="$localDate $localTime"
+                	if [[ "$datetime" != "$expected_next_hour" ]] ; then
+				
+				start_gap_line_number=$(cat -n $hour_data_path | grep "$localDate,$localTime" | awk '{print $1 }')
+                                next_possible_gap_line_number=$((start_gap_line_number+1))
+
+                                while [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
+                                do
+					wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | awk -F "," '{print $(NF-2)}')
+                                        next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+                                done
+
+                                createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
+                                localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 2 )
+                                localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 3 )
+				
+				datetime="$localDate $localTime"
+			
+				prevUTCDate_epoch=$(date -d "$prevUTCDate" +%s)
+				hourbefore=$((prevUTCDate_epoch-3600))
+				prev_hour=$(date --date @$hourbefore +"%Y-%m-%d %H:00")
+			
+				createdUTCDate_epoch=$(date -d "$createdUTCDate" +%s)
+				hourafter=$((createdUTCDate_epoch+3600))
+                		next_hour=$(date --date @$hourafter +"%Y-%m-%d %H:00")
+
+				startdate=$(echo $prev_hour | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
+        			enddate=$(echo $next_hour | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
+				gap_in_hours=1
+                       		break
+			else
+                		datetime_epoch=$(date -d "$datetime" +%s)
+                		newhour=$((datetime_epoch + 3600))
+                		expected_next_hour=$(date --date @$newhour +"%Y-%m-%d %H:00")
+		
+				prevUTCDate=$createdUTCDate
+				prevlocalDate=$localDate
+				prevlocalTime=$localTime
+				prevdatetime=$datetime
+		
+			fi
+        	fi
+	done < $hour_data_path
+	
+	if [ $gap_in_hours -eq 1 ] ; then
+        	echo "$(date +'%Y-%m-%d %H:%M:%S') Gaps Found between $prevUTCDate and $createdUTCDate" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Added 1 hour offset for next process. Start: $startdate End: $enddate " 2>&1 | tee -a $log_path
+	else
+		echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Hours" 2>&1 | tee -a $log_path
+	fi
+
+	
+	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 ee_solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+	
+	first_row_minutes=0
+	gap_in_minutes=0
+	minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
+	
+	python3 ee_solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret > $minute_data_path
+	sed -i '1d' $minute_data_path
+	sleep 1
+	
+	while IFS=, read createdUTCDate nodeId sourceId localDate localTime watts current voltage current_a current_b current_c frequency volate_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca lineVoltage powerFactor apparentPower reactivePower wattHours wattHoursReverse phase
+        do
+        	if [[ $first_row_minutes == 0 ]] ; then
+			first_row_minutes=1
+			datetime=$(echo $createdUTCDate | sed "s/Z//g") 
+                	datetime_epoch=$(date -d "$datetime" +%s)
+			prevdatetime_epoch=$datetime_epoch
+			prevUTCDate=$createdUTCDate
+			#echo "$datetime"
+        	else
+                	datetime=$(echo $createdUTCDate | sed "s/Z//g")
+			datetime_epoch=$(date -d "$datetime" +%s)
+			minute_difference=$((datetime_epoch - prevdatetime_epoch))
+			#echo "$datetime $minute_difference"
+			if [ $minute_difference -gt 60 ] ; then
+				#if [ $minute_difference -gt 1800 ] ; then
+					next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
+					start_gap_line_number=$((next_possible_gap_line_number-1))
+                                	wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-2)}' )
+						while [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
+                                		do
+                                                	next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+							wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-2)}' )
+                                		done
+                                	start_gap_created=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+					end_gap_created=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+					start_gap_created_halfsec=$(echo $start_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')
+					end_gap_created_halfsec=$(echo $end_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')	
+
+					start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 4 )
+					start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 5 )
+					start_gap_watthours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
+					end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 4 )	
+					end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 5 )	
+					end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
+					#start_gap_localdatetime="$start_gap_localDate $start_gap_localTime"
+					#end_gap_localdatime="$end_gap_localDate $end_gap_localTime" 
+					#localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
+                                	#localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
+					
+                                	datetime=$(echo $createdUTCDate | sed "s/Z//g")
+                        		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
+                        		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec and $end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec" 2>&1 | tee -a $log_path
+					
+					start_gap=$start_gap_created
+					end_gap=$end_gap_created
+					start_gap_localdatetime="$start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec"
+ 	                                end_gap_localdatetime="$end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec"
+					gap_in_minutes=1
+                        		break
+				#else
+				#	:
+				#fi
+			else
+				prevdatetime_epoch=$datetime_epoch
+			fi
+
+        	fi
+	done < $minute_data_path
+	
+	if [ $gap_in_minutes -eq 0 ] ; then
+        	echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Minutes" 2>&1 | tee -a $log_path
+	else
+		echo ""
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap in UTC: $start_gap" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap in Local DateTime:  $start_gap_localdatetime" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap In UTC: $end_gap" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap in Local DateTime: $end_gap_localdatetime" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap wattHours: $start_gap_watthours" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap wattHours: $end_gap_watthours" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 4*************" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for data between the gap. Adding 5 second offset" 2>&1 | tee -a $log_path
+		start_gap_epoch=$(date -d "$start_gap" +%s)
+		end_gap_epoch=$(date -d "$end_gap" +%s)
+		start_gap_localdatetime_epoch=$(date -d "$start_gap_localdatetime" +%s)
+		end_gap_localdatetime_epoch=$(date -d "$end_gap_localdatetime" +%s)
+                new_start_gap_epoch=$((start_gap_epoch + 5))
+		new_start_gap_localdatetime_epoch=$((start_gap_localdatetime_epoch + 5))
+                new_end_gap_epoch=$((end_gap_epoch - 5))
+		new_end_gap_localdatetime_epoch=$((end_gap_localdatetime_epoch - 5))
+		new_start_gap=$(date --date @$new_start_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+		new_start_gap_local=$(date --date @$new_start_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
+		new_end_gap=$(date --date @$new_end_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+		new_end_gap_local=$(date --date @$new_end_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
+		gap_num_days=$((end_gap_epoch - start_gap_epoch))
+		
+		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in UTC: $new_start_gap" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in UTC: $new_end_gap" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in Local Datetime: $new_start_gap_local" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_days/60/60/24)) " 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 ee_solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+		python3 ee_solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
+		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
+		cat data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap 2>&1 | tee -a $log_path
+		
+		
+		if [ $gap_count -gt 0 ]; then
+
+
+                        while true
+                        do
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Preview and Confirm commands below will be executed:" 2>&1 | tee -a $log_path
+				echo "Preview: python3 solnet_expire_preview.py $nodeId $sourceids $new_start_gap_local $new_end_gap_local $token $secret" 2>&1 | tee -a $log_path
+				echo "Confirm: python3 solnet_expire_confirm.py $nodeId $sourceids $new_start_gap_local $new_end_gap_local $token $secret" 2>&1 | tee -a $log_path
+                                echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to remove the data between the gap now (Y/N)?" 2>&1 | tee -a $log_path
+                                read continue_result < /dev/tty
+
+                                if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
+
+                                   echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" 2>&1 | tee -a $log_path
+                                   break;
+                                fi
+                        done
+
+
+                        if [[ "${continue_result^^}" == "Y" ]] ; then
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py $nodeId $sourceids $new_start_gap_local $new_end_gap_local $token $secret" 2>&1 | tee -a $log_path
+
+
+				result_count=$(python3 solnet_expire_preview.py $nodeId $sourceids $new_start_gap_local $new_end_gap_local $token $secret)
+
+				echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path
+
+				if [ $result_count -ne $gap_count ] ; then
+
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Process. Count doesn't match, adjust date and run manually" 2>&1 | tee -a $log_path
+
+				else
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of data in gap."
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py $nodeId $sourceids $new_start_gap_local $new_end_gap_local $token $secret in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+					sleep 10	
+					python3 solnet_expire_confirm.py $nodeId $sourceids $new_start_gap_local $new_end_gap_local $token $secret
+				fi	
+
+                        else
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Data between the gaps not deleted. Process 4 Completed" 2>&1 | tee -a $log_path
+                        fi
+
+                fi
+
+
+
+		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 5*************" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Preparing Solcast Query Data" 2>&1 | tee -a $log_path
+
+		solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_script.sh"
+		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
+		rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
+		>$solcast_script_path
+		if [ $gap_num_days -gt 2606399 ]; then
+			
+			solcast_start=$(date --date "$start_gap" +'%Y-%m-%d 00:00:00' )
+                        solcast_end=$(date --date "$end_gap" +'%Y-%m-%d 23:59:59' )
+			solcast_partial=$(date --date "$start_gap + 30 days" +'%Y-%m-%d 23:59:59')
+
+			echo "python3 solcast_download.py $lat $long $(echo $solcast_start | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g' ) $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
+			
+			solcast_num_days=$gap_num_days
+
+			while [ $solcast_num_days -gt 2606399 ]
+			do
+				prev_solcast_partial=$(date --date "$solcast_partial + 1 day" +'%Y-%m-%d 00:00:00')
+				solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
+		                solcast_end_epoch=$(date -d "$solcast_end" +%s )
+				
+				solcast_num_days=$((solcast_end_epoch - solcast_partial_epoch))
+				if [ $solcast_num_days -gt 2606399 ]; then
+					solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59' )
+					echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+				else
+					echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $(echo $solcast_end  | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+					break
+				fi
+			done
+		else
+			solcast_start=$(date --date "$start_gap" +'%Y-%m-%d %H:%M:%S' | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g' )
+                        solcast_end=$(date --date "$end_gap" +'%Y-%m-%d %H:%M:%S' |  sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g' )
+			echo "python3 solcast_download.py $lat $long $solcast_start $solcast_end $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
+		fi
+
+			while true
+                	do
+                       		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to proceed to download solcast (Y/N)?" 2>&1 | tee -a $log_path
+                        	read solcast_continue_result < /dev/tty
+
+                                if [[ "${solcast_continue_result^^}" == "Y" || "${solcast_continue_result^^}" == "N" ]] ; then
+
+                                   echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $solcast_continue_result" 2>&1 | tee -a $log_path
+                                   break;
+                                fi
+                        done
+
+
+                        if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
+
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+				sleep 10
+				/bin/bash $solcast_script_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Process 5 Completed" | tee -a $log_path
+			else
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Solcast Data was not downloaded. Process 5 Completed" | tee -a $log_path
+			fi
+
+			echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
+                	echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
+
+
+			startperiod=$(echo $new_start_gap | sed "s/T/ /g;s/%3A/:/g")
+			endperiod=$(echo $new_end_gap | sed "s/T/ /g;s/%3A/:/g")
+			runtime=$(date +"%Y%m%d_%H%M%S")
+			startperiodepoch=$(date -d "$startperiod" +%s)
+			endperiodepoch=$(date -d "$endperiod" +%s)
+			a=0
+
+			irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
+			electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
+			ghitotal=0
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Trimming File for periods between $startperiod and $endperiod" | tee -a $log_path
+			tail -n +2 $solcast_csv_path | while IFS=, read periodend periodstart period ghi
+			do
+
+        			rowdate=$(date -d "$periodstart" +%s)
+        			if [[ $rowdate -gt $startperiodepoch && $rowdate -lt $endperiodepoch ]] ; then
+                			echo "$periodend,$periodstart,$period,$ghi" >> data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
+        			fi
+			done
+
+			startdate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | head -n 1 | cut -d , -f 2)
+			enddate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | tail -n 1 | cut -d , -f 2)
+
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
+			while IFS=, read periodend periodstart period ghi
+			do
+       				ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
+        			if [[ $a = 0 ]] ; then
+            				e2=$ghi
+            				echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
+            				echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
+            				a=1
+            				ghitotal=$((ghi+ghitotal))
+            				echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+        			else
+            				d312=$(echo "scale=4; $ghi/12" | bc | awk '{printf "%.4f\n", $0}')
+            				nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.4f\n", $0}')
+            				e2=$nir
+            				ghitotal=$((ghi+ghitotal))
+            				echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+           				echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
+        			fi
+
+			done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
+
+        		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal"
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Enter Total Enery in KWH: " 
+        		read total_energy < /dev/tty
+			#eesourceids=$sourceids
+			prevenergyinwatthours=0
+
+        		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" | tee -a $log_path
+
+			echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
+        		while IFS=, read ddt irr irh
+        		do
+                		ghiratio=$(echo "scale=4 ; $irr / $ghitotal" | bc | awk '{printf "%.4f\n", $0}' )
+                		energy=$(echo "scale=4 ; $total_energy * $ghiratio * 12" | bc | awk '{printf "%.4f\n", $0}' )
+                		energyinwatts=$(echo "scale=4 ; $energy * 1000" | bc | awk '{printf "%.4f\n", $0}')
+                		watthours=$(echo "scale=4 ; $energyinwatts / 12" | bc | awk '{printf "%.4f\n", $0}' )
+				totalwatthours=$(echo "scale=4 ; $prevenergyinwatthours + $watthours" | bc | awk '{printf "%.4f\n", $0}')
+                		prevenergyinwatthours=$totalwatthours
+                		echo "$node,$sid,$ddt,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
+        		done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+
+        		snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+                        snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+                        inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
+                        inner_end_gap_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Stitching Values for SolarNetwork Event 1" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_gap_watthours" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_gap_watthours" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Stitching Values for SolarNetwork Event 2" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_gap_watthours" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_gap_watthours" | tee -a $log_path
+
+			
+			
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file $electrical_energy_data_path" | tee -a $log_path
+        		dos2unix  $electrical_energy_data_path
+        		sleep 1
+        		xz -k $electrical_energy_data_path
+
+                       	echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" 2>&1 | tee -a $log_path
+        		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
+			filesizebytes=$(ls -l $electrical_energy_data_path | awk '{print $5}')	
+			filsesizemb=$(($filesizebytes/1048576))
+				
+			if [ $filsesizemb -lt 20 ] ; then
+
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
+
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py $node $eesourceids UTC $electrical_energy_data_path $token $secret"
+				while true
+                        	do
+                        		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
+                                	read continue_result < /dev/tty
+
+                                		if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
+                                   		echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                                   		break;
+                                		fi
+                        		done
+
+                        		if [[ "${continue_result^^}" == "Y" ]] ; then
+				
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+                                		sleep 10
+					
+						jobid=$(python3 solnet_import.py $node $eesourceids UTC $electrical_energy_data_path $token $secret)
+                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
+                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
+
+					else
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Process Aborted" 2>&1 | tee -a $log_path
+					fi
+			else
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process Aborted. "
+
+			fi 
+
+
+	fi
+fi
