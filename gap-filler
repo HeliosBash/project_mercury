@@ -429,8 +429,8 @@ else
             					ghitotal=$((ghi+ghitotal))
             					echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
         				else
-            					d312=$(echo "scale=4; $ghi/12" | bc)
-            					nir=$(echo "$e2 + $d312" | bc)
+						d312=$(echo "scale=4; $ghi/12" | bc)
+                                                nir=$(echo "$e2 + $d312" | bc)
             					e2=$nir
             					ghitotal=$((ghi+ghitotal))
             					echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat

@@ -182,7 +182,7 @@ else
 			datetime_epoch=$(date -d "$datetime" +%s)
 			minute_difference=$((datetime_epoch - prevdatetime_epoch))
 			#echo "$datetime $minute_difference"
-			if [ $minute_difference -gt 60 ] ; then
+			if [ $minute_difference -gt 900 ] ; then
 				#if [ $minute_difference -gt 1800 ] ; then
 					next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
 					start_gap_line_number=$((next_possible_gap_line_number-1))
@@ -400,7 +400,7 @@ else
 			startdate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | head -n 1 | cut -d , -f 2)
 			enddate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | tail -n 1 | cut -d , -f 2)
 
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from $startdate to $enddate" | tee -a $log_path
 			while IFS=, read periodend periodstart period ghi
 			do
        				ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
@@ -412,8 +412,8 @@ else
             				ghitotal=$((ghi+ghitotal))
             				echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
         			else
-            				d312=$(echo "scale=4; $ghi/12" | bc | awk '{printf "%.4f\n", $0}')
-            				nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.4f\n", $0}')
+            				d312=$(echo "scale=8; $ghi/12" | bc )
+            				nir=$(echo "$e2 + $d312" | bc )
             				e2=$nir
             				ghitotal=$((ghi+ghitotal))
             				echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
@@ -433,12 +433,14 @@ else
 			echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
         		while IFS=, read ddt irr irh
         		do
-                		ghiratio=$(echo "scale=4 ; $irr / $ghitotal" | bc | awk '{printf "%.4f\n", $0}' )
-                		energy=$(echo "scale=4 ; $total_energy * $ghiratio * 12" | bc | awk '{printf "%.4f\n", $0}' )
-                		energyinwatts=$(echo "scale=4 ; $energy * 1000" | bc | awk '{printf "%.4f\n", $0}')
-                		watthours=$(echo "scale=4 ; $energyinwatts / 12" | bc | awk '{printf "%.4f\n", $0}' )
-				totalwatthours=$(echo "scale=4 ; $prevenergyinwatthours + $watthours" | bc | awk '{printf "%.4f\n", $0}')
+                		ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc )
+                		energy=$(echo "scale=8 ; $total_energy * $ghiratio * 12" | bc )
+                		energyinwatts=$(echo "scale=8 ; $energy * 1000" | bc )
+                		watthours=$(echo "scale=8 ; $energyinwatts / 12" | bc )
+				totalwatthours=$(echo "scale=8 ; $prevenergyinwatthours + $watthours" | bc )
                 		prevenergyinwatthours=$totalwatthours
+				# >data/review_ee_computation
+				# echo "$ddt,$irr,$ghitotal,$ghiratio,$total_energy,$energyinwatts,$totalwatthours" >> data/review_ee_computation
                 		echo "$node,$sid,$ddt,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
         		done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
 
@@ -477,7 +479,7 @@ else
 
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py $node $eesourceids UTC $electrical_energy_data_path $token $secret"
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py $node $sourceids UTC $electrical_energy_data_path $token $secret"
 				while true
                         	do
                         		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
@@ -494,7 +496,7 @@ else
 						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
                                 		sleep 10
 					
-						jobid=$(python3 solnet_import.py $node $eesourceids UTC $electrical_energy_data_path $token $secret)
+						jobid=$(python3 solnet_import.py $node $sourceids UTC $electrical_energy_data_path $token $secret)
                      				echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
                      				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
 
