@@ -154,8 +154,8 @@ else
                  echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
                  a=1
              else
-                 d312=$(echo "scale=4; $ghi/12" | bc)
-                 nir=$(echo "$e2 + $d312" | bc)
+                 d312=$(echo "scale=4; $ghi/12" | bc | awk '{printf "%.4f\n", $0}' )
+                 nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.4f\n", $0}' )
                  e2=$nir
                  echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
              fi
