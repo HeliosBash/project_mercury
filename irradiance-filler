@@ -47,11 +47,11 @@ echo "$(date +'%Y-%m-%d %H:%M:%S') UTC   : $utcenddate" 2>&1 | tee -a $log_path
 echo "$(date +'%Y-%m-%d %H:%M:%S') UTC Formatted : $enddate" 2>&1 | tee -a $log_path
 
 echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for any data in specified date range " 2>&1 | tee -a $log_path
-echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 # Checks date range for any existing datum and aborts if there are any
 
-python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum
+python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum
 
 datum_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum | wc -l)    
 
@@ -191,7 +191,7 @@ else
 
         if [ $filsesizemb -lt 20 ] ; then
            echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
-           echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret"
+           echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret"
 		while true
                 do
                    	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
@@ -206,7 +206,7 @@ else
 
 		     echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
                      sleep 5
-		     jobid=$(python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret)
+		     jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret)
 		     echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data"
 		     python3 solnet_manage_jobs.py import preview $token $secret $jobid
 		     echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid"

@@ -15,7 +15,7 @@ log_path="logs/identify-gap-data-run.log"
 
 if [ "$#" -ne 10 ]; then
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: gap-filler [ node ] [ sourceids ] [ startdate ] [ enddate ] [ maxoutput ] [ lat ] [ long ] [ solcast_token ] [ solne_token ] [ solnet_secret ]" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: ee-backfiller [ node ] [ sourceids ] [ startdate ] [ enddate ] [ maxoutput ] [ lat ] [ long ] [ solcast_token ] [ solne_token ] [ solnet_secret ]" 2>&1 | tee -a $log_path
 
 else
 
@@ -483,7 +483,7 @@ else
 
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py $node $sourceids UTC $electrical_energy_data_path $token $secret"
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $electrical_energy_data_path --token $token --secret $secret"
 				while true
                         	do
                         		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
