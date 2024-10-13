@@ -21,13 +21,13 @@ else
 
 	echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
 	
 	first_row_days=0
 	gap_in_days=0
 	day_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_days"
 
-	python3 solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput $token $secret > $day_data_path
+	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret > $day_data_path
 	
 	sed -i '1d' $day_data_path
 	sleep 1
@@ -80,13 +80,13 @@ else
 		
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 2*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Hours $starthour and $endhour" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starthour --enddate $endhour --aggregate Hour --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 	first_row_hours=0
 	gap_in_hours=0
 	hour_data_path="data/${node}_${sourceids}_${starthour}_${endhour}_datum_hours"
 
-	python3 solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput $token $secret > $hour_data_path
+	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starthour --enddate $endhour --aggregate Hour --maxoutput $maxoutput --token $token --secret $secret > $hour_data_path
 	sed -i '1d' $hour_data_path
 	sleep 1
 	while IFS=, read createdUTCDate localDate localTime nodeId sourceId irradiance_min irradiance_max irradiance irradianceHours
@@ -158,13 +158,13 @@ else
 	
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
 	
 	first_row_minutes=0
 	gap_in_minutes=0
 	minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
 	
-	python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret > $minute_data_path
+	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > $minute_data_path
 	sed -i '1d' $minute_data_path
 	sleep 1
 	
@@ -183,45 +183,41 @@ else
 			minute_difference=$((datetime_epoch - prevdatetime_epoch))
 			#echo "$datetime $minute_difference"
 			if [ $minute_difference -gt 60 ] ; then
-				#if [ $minute_difference -gt 1800 ] ; then
-					next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
-					start_gap_line_number=$((next_possible_gap_line_number-1))
-                                	irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
-					        #echo "irradianceHours = $irradianceHours"
-						while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
-                                		do
-                                                	next_possible_gap_line_number=$((next_possible_gap_line_number+1))
-							irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
-                                		done
-                                	start_gap_created=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
-					end_gap_created=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
-					start_gap_created_halfsec=$(echo $start_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')
-					end_gap_created_halfsec=$(echo $end_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')	
+				next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
+				start_gap_line_number=$((next_possible_gap_line_number-1))
+                                irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+				#echo "irradianceHours = $irradianceHours"
+				while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
+                                do
+                                      next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+				      irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+                                done
+                                start_gap_created=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+				end_gap_created=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+				start_gap_created_halfsec=$(echo $start_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')
+				end_gap_created_halfsec=$(echo $end_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')	
 
-					start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
-					start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
-					start_gap_irradiancehours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
-					end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )	
-					end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )	
-					end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
-					#start_gap_localdatetime="$start_gap_localDate $start_gap_localTime"
-					#end_gap_localdatime="$end_gap_localDate $end_gap_localTime" 
-					#localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
-                                	#localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
+				start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
+				start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
+				start_gap_irradiancehours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
+				end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )	
+				end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )	
+				end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
+				#start_gap_localdatetime="$start_gap_localDate $start_gap_localTime"
+				#end_gap_localdatime="$end_gap_localDate $end_gap_localTime" 
+				#localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
+                                #localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
 					
-                                	datetime=$(echo $createdUTCDate | sed "s/Z//g")
-                        		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
-                        		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec and $end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec" 2>&1 | tee -a $log_path
+                                datetime=$(echo $createdUTCDate | sed "s/Z//g")
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec and $end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec" 2>&1 | tee -a $log_path
 					
-					start_gap=$start_gap_created
-					end_gap=$end_gap_created
-					start_gap_localdatetime="$start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec"
- 	                                end_gap_localdatetime="$end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec"
-					gap_in_minutes=1
-                        		break
-				#else
-				#	:
-				#fi
+				start_gap=$start_gap_created
+				end_gap=$end_gap_created
+				start_gap_localdatetime="$start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec"
+ 	                        end_gap_localdatetime="$end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec"
+				gap_in_minutes=1
+                        	break
 			else
 				prevdatetime_epoch=$datetime_epoch
 			fi
@@ -232,7 +228,6 @@ else
 	if [ $gap_in_minutes -eq 0 ] ; then
         	echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Minutes" 2>&1 | tee -a $log_path
 	else
-		echo ""
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap in UTC: $start_gap" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap in Local DateTime:  $start_gap_localdatetime" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap In UTC: $end_gap" 2>&1 | tee -a $log_path
@@ -260,8 +255,8 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in Local Datetime: $new_start_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_days/60/60/24)) " 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret" 2>&1 | tee -a $log_path
-		python3 solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
+		python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
 		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
 		cat data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap 2>&1 | tee -a $log_path
