@@ -419,20 +419,21 @@ else
             					e2=$ghi
             					echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
             					echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
-						#echo "$node,$sid,$ddt,$ghi,${ghi}\\r\\n" >> $irradiance_data_path
             					a=1
             					ghitotal=$((ghi+ghitotal))
             					echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
         				else
-						d312=$(echo "scale=4; $ghi/12" | bc)
-                                                nir=$(echo "$e2 + $d312" | bc)
+						d312=$(echo "scale=8; $ghi/12" | bc)
+						if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
+                                                        nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.8f", $0}' )
+                                                else
+                                                        nir=$(echo "$e2 + $d312" | bc  )
+                                                fi
             					e2=$nir
             					ghitotal=$((ghi+ghitotal))
             					echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
            					echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
-                                                #echo "$node,$sid,$ddt,$ghi,${nir}\\r\\n" >> $irradiance_data_path
         				fi
-
 				done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
 
 				snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')

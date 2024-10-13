@@ -413,7 +413,11 @@ else
             				echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
         			else
             				d312=$(echo "scale=8; $ghi/12" | bc )
-            				nir=$(echo "$e2 + $d312" | bc )
+					if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
+                                             nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.8f", $0}' )
+ 	                                else
+                                             nir=$(echo "$e2 + $d312" | bc  )
+                                        fi
             				e2=$nir
             				ghitotal=$((ghi+ghitotal))
             				echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
