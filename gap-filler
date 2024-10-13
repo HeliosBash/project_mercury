@@ -182,7 +182,7 @@ else
 			datetime_epoch=$(date -d "$datetime" +%s)
 			minute_difference=$((datetime_epoch - prevdatetime_epoch))
 			#echo "$datetime $minute_difference"
-			if [ $minute_difference -gt 60 ] ; then
+			if [ $minute_difference -gt 601 ] ; then
 				next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
 				start_gap_line_number=$((next_possible_gap_line_number-1))
                                 irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
@@ -394,7 +394,7 @@ else
 				endperiodepoch=$(date -d "$endperiod" +%s)
 				a=0
 
-				irradiance_data_path="data/${node}_${sourceids}_${startperiod}_${endperiod}_PYRGAP_SolNetIMport_${runtime}.csv"
+				irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
 				electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
 				ghitotal=0
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Trimming File for periods between $startperiod and $endperiod" | tee -a $log_path
