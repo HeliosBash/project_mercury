@@ -1,96 +1,70 @@
+import argparse
 from solarnetwork_python.client import Client
-import json
 import sys
 
-def list_expire_jobs(tokenstr,secretstr):
-        client = Client(tokenstr,secretstr)
-        response = client.listdeletejobs()
-        
-        print ("Job_ID","State","User_ID","Job_Duration","Result_Count","Success",sep=",")
-        
-        for element in response:
-            jobid = element['jobId']
-            state = element['jobState'] 
-            userid = element['userId'] 
-            jobduration = element['jobDuration'] 
-            resultcount = element['resultCount'] 
-            success = element['success'] 
-            print (jobid,state,userid,jobduration,resultcount,success,sep=",")
+def list_expire_jobs(token, secret):
+    client = Client(token, secret)
+    response = client.listdeletejobs()
 
-def list_import_jobs(tokenstr,secretstr):
-        
-        client = Client(tokenstr,secretstr)
-        response = client.listimportjobs()
-        
-        print ("jobid,jobstate,done,cancelled,name")
-        
-        for element in response:
-            name = element['configuration']['inputConfiguration']['name']
-            formatname = name.replace(" ", "_")
-            jobid = element['jobId']
-            jobstate = element['jobState']
-            done = element['done']
-            cancelled = element['cancelled']
-            print (jobid,jobstate,done,cancelled,formatname,sep=",")
+    print("Job_ID,State,User_ID,Job_Duration,Result_Count,Success", sep=",")
+    for element in response:
+        jobid = element.get('jobId', 'N/A')
+        state = element.get('jobState', 'N/A')
+        userid = element.get('userId', 'N/A')
+        jobduration = element.get('jobDuration', 'N/A')
+        resultcount = element.get('resultCount', 'N/A')
+        success = element.get('success', 'N/A')
+        print(jobid, state, userid, jobduration, resultcount, success, sep=",")
 
-def view_import_jobs(tokenstr,secretstr,jobimportid):
+def list_import_jobs(token, secret):
+    client = Client(token, secret)
+    response = client.listimportjobs()
 
-        client = Client(token, secret)
-        response = client.viewimportjobs(jobimportid)
-        print (response)
+    print("Job_ID,Job_State,Done,Cancelled,Name")
+    for element in response:
+        name = element['configuration']['inputConfiguration']['name'].replace(" ", "_")
+        jobid = element.get('jobId', 'N/A')
+        jobstate = element.get('jobState', 'N/A')
+        done = element.get('done', 'N/A')
+        cancelled = element.get('cancelled', 'N/A')
+        print(jobid, jobstate, done, cancelled, name, sep=",")
 
-def preview_import_jobs(tokenstr,secretstr,jobimportid):
+def manage_import_jobs(action, token, secret, jobid):
+    client = Client(token, secret)
+    action_map = {
+        "view": client.viewimportjobs,
+        "preview": client.previewimportjobs,
+        "delete": client.deleteimportjobs,
+        "confirm": client.confirmimportjobs
+    }
 
-        client = Client(token, secret)
-        response = client.previewimportjobs(jobimportid)
-        print (response)
+    if action in action_map:
+        try:
+            response = action_map[action](jobid)
+            print(response)
+        except Exception as e:
+            print(f"Error occurred: {e}")
+    else:
+        print("Unknown action")
 
-def delete_import_jobs(tokenstr,secretstr,jobimportid):
+def main():
+    parser = argparse.ArgumentParser(description="SolarNetwork Job Manager")
+    parser.add_argument("job", choices=["expire", "import"], help="Job type")
+    parser.add_argument("action", choices=["list", "view", "preview", "delete", "confirm"], help="Action to perform")
+    parser.add_argument("token", help="API Token")
+    parser.add_argument("secret", help="API Secret")
+    parser.add_argument("jobid", nargs='?', help="Job ID (required for certain actions)")
 
-        client = Client(token, secret)
-        response = client.deleteimportjobs(jobimportid)
-        print (response)
+    args = parser.parse_args()
 
-def confirm_import_jobs(tokenstr,secretstr,jobimportid):
-
-        client = Client(token, secret)
-        response = client.confirmimportjobs(jobimportid)
-        print (response)
-
-
+    if args.job == "expire" and args.action == "list":
+        list_expire_jobs(args.token, args.secret)
+    elif args.job == "import" and args.action == "list":
+        list_import_jobs(args.token, args.secret)
+    elif args.job == "import" and args.jobid:
+        manage_import_jobs(args.action, args.token, args.secret, args.jobid)
+    else:
+        print("Unknown job and action")
 
 if __name__ == "__main__":
-    
-    if ((len(sys.argv)< 5) or (len(sys.argv)> 6)):
-
-        print ("Incorrect number of parameters")
-        print ("python3 solnet_manage_jobs.py [expire|import] list token secret")
-        print ("python3 solnet_manage_jobs.py [import] [view|preview|delete|confirm] token secret jobid")
-
-    else:
-        if ((len(sys.argv) == 5) or (len(sys.argv) == 6)) :
-            job = sys.argv[1]
-            action = sys.argv[2]
-            token = sys.argv[3]
-            secret = sys.argv[4]
-            
-            if len(sys.argv) == 6:
-                jobid = sys.argv[5]
-                if (job == "import") and (action == "view"):
-                    view_import_jobs(token,secret,jobid)
-                elif (job == "import") and (action == "preview"):
-                    preview_import_jobs(token,secret,jobid)
-                elif (job == "import") and (action == "delete"):
-                    delete_import_jobs(token,secret,jobid)
-                elif (job == "import") and (action == "confirm"):
-                    confirm_import_jobs(token,secret,jobid)
-                else:
-                    print ("Unknown job and action")
-            else: 
-                if (job == "expire") and (action == "list"):
-                    list_expire_jobs(token,secret)  
-                elif (job == "import") and (action == "list"): 
-                    list_import_jobs(token,secret)
-                else:
-                    print ("Unknown job and action")
-
+    main()

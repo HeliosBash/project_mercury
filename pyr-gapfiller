@@ -472,7 +472,7 @@ else
 
 					echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
 
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret"
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret"
 					while true
                         		do
                         			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
@@ -489,7 +489,7 @@ else
 						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
                                 		sleep 10
 					
-						jobid=$(python3 solnet_import.py $node $sourceids UTC $irradiance_data_path $token $secret)
+						jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret)
                      				echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
                      				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
 
