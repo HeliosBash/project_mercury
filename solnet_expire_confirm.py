@@ -22,8 +22,8 @@ def main():
     # Add arguments 
     parser.add_argument("--node", required=True, type=str, help="Node ID (non-empty string)")
     parser.add_argument("--sourceids", required=True, type=str, help="Comma-separated list of source IDs")
-    parser.add_argument("--startdate", required=True, type=str, help="Start date in format YYYY-MM-DDTHH%3AMM%3ASS")
-    parser.add_argument("--enddate", required=True, type=str, help="End date in format YYYY-MM-DDTHH%3AMM%3ASS")
+    parser.add_argument("--startdate", required=True, type=str, help="Start local date in format YYYY-MM-DDTHH%3AMM%3ASS")
+    parser.add_argument("--enddate", required=True, type=str, help="End local date in format YYYY-MM-DDTHH%3AMM%3ASS")
     parser.add_argument("--token", required=True, help="API token")
     parser.add_argument("--secret", required=True, help="API secret")
 
