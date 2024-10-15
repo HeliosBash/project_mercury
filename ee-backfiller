@@ -21,7 +21,7 @@ else
 
 	echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 ee_solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 ee_solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput $token $secret" 2>&1 | tee -a $log_path
 	
 	first_row_days=0
 	gap_in_days=0
@@ -43,7 +43,6 @@ else
 			if [[ "$localDate" != "$expected_next" ]] ; then
 				start_gap_line_number=$(cat -n $day_data_path | grep $prevlocalDate | awk '{print $1 }')
 				next_possible_gap_line_number=$((start_gap_line_number+1))
-
 				while [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
 				do
         				wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | awk -F "," '{print $(NF-2)}')
@@ -80,7 +79,7 @@ else
 		
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 2*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Hours $starthour and $endhour" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 ee_solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 ee_solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput $token $secret" 2>&1 | tee -a $log_path
 
 	first_row_hours=0
 	gap_in_hours=0
@@ -109,7 +108,6 @@ else
 				
 				start_gap_line_number=$(cat -n $hour_data_path | grep "$localDate,$localTime" | awk '{print $1 }')
                                 next_possible_gap_line_number=$((start_gap_line_number+1))
-
                                 while [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
                                 do
 					wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | awk -F "," '{print $(NF-2)}')
@@ -125,13 +123,21 @@ else
 				prevUTCDate_epoch=$(date -d "$prevUTCDate" +%s)
 				hourbefore=$((prevUTCDate_epoch-3600))
 				prev_hour=$(date --date @$hourbefore +"%Y-%m-%d %H:00")
-			
+				#daybefore=$((prevUTCDate_epoch-86400))
+                                #prev_day=$(date --date @$daybefore +"%Y-%m-%d %H:00")
+
 				createdUTCDate_epoch=$(date -d "$createdUTCDate" +%s)
 				hourafter=$((createdUTCDate_epoch+3600))
-                		next_hour=$(date --date @$hourafter +"%Y-%m-%d %H:00")
+				next_hour=$(date --date @$hourafter +"%Y-%m-%d %H:00")
+				#dayafter=$((createdUTCDate_epoch+86400))
+                                #next_day=$(date --date @$dayafter +"%Y-%m-%d %H:00")
+
 
 				startdate=$(echo $prev_hour | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
         			enddate=$(echo $next_hour | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
+				#startdate=$(echo $prev_day | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
+                                #enddate=$(echo $next_day | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
+
 				gap_in_hours=1
                        		break
 			else
@@ -182,7 +188,7 @@ else
 			datetime_epoch=$(date -d "$datetime" +%s)
 			minute_difference=$((datetime_epoch - prevdatetime_epoch))
 			#echo "$datetime $minute_difference"
-			if [ $minute_difference -gt 900 ] ; then
+			if [ $minute_difference -gt 600 ] ; then
 				#if [ $minute_difference -gt 1800 ] ; then
 					next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
 					start_gap_line_number=$((next_possible_gap_line_number-1))
@@ -501,7 +507,7 @@ else
 						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
                                 		sleep 10
 					
-						jobid=$(python3 solnet_import.py $node $sourceids UTC $electrical_energy_data_path $token $secret)
+						jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $electrical_energy_data_path --token $token --secret $secret)
                      				echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
                      				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
 
