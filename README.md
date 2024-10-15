@@ -1,53 +1,43 @@
 # Documentation
 
-GAP FILLER PROCESSES:
+SOLNET AUTOMATION SCRIPTS
 
-1. Identify gaps with aggregation set to Days
-2. Identify gaps with aggregation set to Hours
-3. Identify gaps with aggregation set to FiveMinute
-4. Attempts to identify any data within the gap and expire them
-5. Download solcast data. If the number of days required exceeds 30 days, it will download solcast data in batches
-6. Computes irradiance hours and backfill data
-7. Import Data. If data exceeds 5000 rows, data will be divided in batches.
+	pyr-gapfiller 
 
+		Description:	Identifies PYR gaps and fills the gap with irradiance data downloaded from solcast.
+		Usage: 		pyr-gapfiller [nodeid] [PYR sourceids] [UTC startdate] [UTC enddate] [maxoutput] [lattitue] [longitude] [solcast_token] [solnet_token] [solnet_secret] 
+		Example: 	./pyr-gapfiller 379 /VI/SU/B2/PYR/1 2021-08-31 2021-09-03 1000000 18.343015 -64.911997 solcasttoken solnettoken solnetsecret
 
-MAIN COMMAND: gap-filler [ nodeid ] [ sourceids ] [ startdate ] [ enddate ] [ maxoutput ] [ lat ] [ long ] [ solcast_token ] [ solne_token ] [ solnet_secret ]
+	irradiance-filler
 
-Example: /bin/bash gap-filler 372 /G2/S2/S1/PYR/1 2024-05-01 2024-06-31 1000000 29.658884 -82.334525 XXXXXX ABCD1234 WXYZ7890
+        	Description:	It has a similar process as the pyr-gapfiller but it doesn't identify gaps. Applicable for date ranges that are known to have no data.
+		Usage:		irradiance-filler [nodeid] [PYR sourceids] [UTC startdate] [UTC enddate] [maxoutput] [latitude] [longitude] [solcast_token] [solnet_token] [solnet_secret]
 
+	ee-backfiller
 
-SUB COMMANDS:
-
-1. solnet_query.py [ nodeid ] [ sourceids ] [ startdate ] [ enddate ] [ Day | Hour | FiveMinute | None ] [ Max Output ] [ solne_token ] [ solnet_secret ]
-
-Example: python3 solnet_query.py 372 %2FG2%2FS2%2FS1%2FPYR%2F1 2024-05-01T00%3A00 2024-06-31T23%3A59 Day 1000000 ABCD1234 WXYZ7890
+		Description:	Fixes energy generation spikes caused by energy generation gaps. The energy generation of the spike is distributed across the gap and the ratio is driven by the irradiance data downloaded from solcast.  
+		Usage:		ee-backfiller [nodeid] [GEN sourceids] [UTC startdate] [UTC enddate] [maxoutput] [lat] [long] [solcast_token] [solnet_token] [solnet_secret]
+		Example:	./ee-backfiller 372 /G2/S2/S1/GEN/1 2024-05-08 2024-06-27 1000000 29.658884 -82.334525 solcasttoken solnettoken solnetsecret
 
 
-2. solnet_expire_preview.py [ nodeid ] [ sourceids ] [ startdate ] [ enddate ] [ solne_token ] [ solnet_secret ]
+PYTHON SCRIPTS FOR SOLARNETWORK API
 
-Example: python3 solnet_expire_preview.py 372 %2FG2%2FS2%2FS1%2FPYR%2F1 2024-05-09T19%3A00%3A30 2024-06-10T20%3A59%3A30 ABCD1234 WXYZ7890
+	Solnet Query [solnet_query.py] 
 
-
-3. solnet_expire_confirm.py [ nodeid ] [ sourceids ] [ startdate ] [ enddate ] [ solne_token ] [ solnet_secret ]
-
-Example: python3 solnet_expire_confirm.py 372 %2FG2%2FS2%2FS1%2FPYR%2F1 2024-05-09T19%3A00%3A30 2024-06-10T20%3A59%3A30 ABCD1234 WXYZ7890
-
-
-4. python3 solcast_download.py [ latitude ] [ longitude ] [ startdate ] [ enddate ] [ solne_token ]
-
-Example: python3 solcast_download.py 29.658884 -82.334525 2024-05-09T00%3A00%3A00.000Z 2024-06-08T23%3A59%3A59.000Z XXXXXX
+		Description:	Lists irraddiance data for a given date range in UTC
+		Usage:		solnet_query.py --node [nodeid] --sourceids [sourceids] --startdate [UTC startdate] --enddate [UTC enddate] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet_token] --secret [solnet_secret]
+		Example:	solnet_query.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --startdate 2024-05-01T00%3A00 --enddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
 
 
-5. python3 solnet_import.py [ nodeid ] [ sourceids ] [ timezone ] [ csv_file_path_computed_irradiance_data ] [ solne_token ] [ solnet_secret ] 
+	Solnet Expire Preview [solnet_expire_preview.py]
 
-Example: python3 solnet_import.py 372 %2FG2%2FS2%2FS1%2FPYR%2F1 UTC data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv ABCD1234 WXYZ7890
-
-
-6. python3 solnet_manage_jobs.py [expire|import] [list] token secret
-
-Example: python3 solnet_manage_jobs.py import list ABCD1234 WXYZ7890
+		Description:    Provides a preview on the number of datum to be deleted in a given date range. Date range should be the LOCAL date and time.
+		Usage: 		solnet_expire_preview.py --node [nodeid] --sourceids [sourceids] --startdate [startdate] --enddate [enddate] --token [solnet_token] --secret [solnet_secret]
+		Example:	solnet_expire_preview.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --startdate 2024-05-09T19%3A00%3A30 --enddate 2024-06-10T20%3A59%3A30 --token ABCD1234 --secret WXYZ7890
 
 
-7. python3 solnet_manage_jobs.py [import] [view|preview|delete|confirm] token secret jobid
+	Solnet Expire Preview [solnet_expire_preview.py]
 
-Example: python3 solnet_manage_jobs.py import preview ABCD1234 WXYZ7890 db14e0ce-2a0d-4ed5-bae0-3874bdcf74ed
+                Description:    Deletes datum in a given date range. Date range should be the LOCAL date and time.
+                Usage:          solnet_expire_confirm.py --node [nodeid] --sourceids [sourceids] --startdate [startdate] --enddate [enddate] --token [solnet_token] --secret [solnet_secret]
+                Example:        solnet_expire_confirm.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --startdate 2024-05-09T19%3A00%3A30 --enddate 2024-06-10T20%3A59%3A30 --token ABCD1234 --secret WXYZ7890
