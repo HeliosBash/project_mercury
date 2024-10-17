@@ -278,8 +278,8 @@ else
                         while true
                         do
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Preview and Confirm commands below will be executed:" 2>&1 | tee -a $log_path
-                                echo "Preview: python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --startdate $new_start_gap_local --enddate $new_end_gap_local --token $token --secret $secret" 2>&1 | tee -a $log_path
-                                echo "Confirm: python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --startdate $new_start_gap_local --enddate $new_end_gap_local --token $token --secret $secret" 2>&1 | tee -a $log_path
+                                echo "Preview: python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret" 2>&1 | tee -a $log_path
+                                echo "Confirm: python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to remove the data between the gap now (Y/N)?" 2>&1 | tee -a $log_path
                                 read continue_result < /dev/tty
@@ -293,10 +293,10 @@ else
 
 
                         if [[ "${continue_result^^}" == "Y" ]] ; then
-                                echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --startdate $new_start_gap_local --enddate $new_end_gap_local --token $token --secret $secret" 2>&1 | tee -a $log_path
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 
-				result_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --startdate $new_start_gap_local --enddate $new_end_gap_local --token $token --secret $secret)
+				result_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
 
 				echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path
 
@@ -306,9 +306,9 @@ else
 
 				else
 					echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of data in gap."
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --startdate $new_start_gap_local --enddate $new_end_gap_local --token $token --secret $secret in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
 					sleep 10	
-					python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --startdate $new_start_gap_local --enddate $new_end_gap_local --token $token --secret $secret
+					python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret
 				fi	
 
                         else
