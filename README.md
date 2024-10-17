@@ -38,9 +38,9 @@ PYTHON SCRIPTS FOR SOLARNETWORK API
 
 	Solnet Expire Datum - Confirm
 
-                Description:    Deletes datum in a given date range. Date range should be the LOCAL date and time.
-                Usage:          solnet_expire_confirm.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local start date] --localenddate [LOCAL end date] --token [solnet token] --secret [solnet secret]
-                Example:        python3 solnet_expire_confirm.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-09T19%3A00%3A30 --localenddate 2024-06-10T20%3A59%3A30 --token ABCD1234 --secret WXYZ7890
+		Description:    Deletes datum in a given date range. Date range should be the LOCAL date and time.
+		Usage:          solnet_expire_confirm.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local start date] --localenddate [LOCAL end date] --token [solnet token] --secret [solnet secret]
+		Example:        python3 solnet_expire_confirm.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-09T19%3A00%3A30 --localenddate 2024-06-10T20%3A59%3A30 --token ABCD1234 --secret WXYZ7890
 
 	Solnet Import
 
