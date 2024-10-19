@@ -53,3 +53,12 @@ PYTHON SCRIPTS FOR SOLARNETWORK API
 		Description:	Downloads solcast data for a given GPS coordinate and date range. The maximum date range that can be set is 30 days.
 		Usage:		python3 solcast_download.py [latitude] [longitude] [UTC start date] [UTC end date] [solcast_api_token]
 		Example:	python3 solcast_download.py 29.658884 -82.334525 2024-06-11T11%3A10%3A00.000Z 2024-06-11T11%3A25%3A00.000Z foobar
+
+	Solnet Manage Jobs
+		
+		Description:	Lists and delete expire jobs. It also wiews, previews, confirms, and deletes import jobs.   
+		Usage:		python3 solnet_manage_jobs.py [jobs] [action] [token] [secret] [jobid]
+		Example:        python3 solnet_manage_jobs.py expire list token123 secret1234 
+				python3 solnet_manage_jobs.py import preview token123 secret1234 jobid123
+				python3 solnet_manage_jobs.py import delete token123 secret1234 jobid123
+
