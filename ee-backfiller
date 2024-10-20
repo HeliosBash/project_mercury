@@ -27,12 +27,12 @@ else
 	gap_in_days=0
 	day_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_days"
 
-	python3 ee_solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput $token $secret > $day_data_path
+	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret > $day_data_path
 	
 	sed -i '1d' $day_data_path
 	sleep 1
-
-	while IFS=, read createdUTCDate nodeId sourceId localDate localTime watts current voltage current_a current_b current_c frequency volate_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca lineVoltage powerFactor apparentPower reactivePower wattHours wattHoursReverse phase
+	
+	while IFS=, read createdUTCDate localDate localTime nodeId sourceId watts_min watts_max current_min current_max voltage_min voltage_max frequency_min frequency_max powerFactor_min powerFactor_max apparentPower_min apparentPower_max reactivePower_min reactivePower_max lineVoltage_min lineVoltage_max current_a_min current_a_max current_b_min current_b_max current_c_min current_c_max voltage_a_min voltage_a_max voltage_b_min voltage_b_max voltage_c_min voltage_c_max voltage_ab_min voltage_ab_max voltage_bc_min voltage_bc_max voltage_ca_min voltage_ca_max watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
 	do
 		if [[ $first_row_days == 0 ]] ; then
 			first_row_days=1
@@ -84,12 +84,12 @@ else
 	first_row_hours=0
 	gap_in_hours=0
 	hour_data_path="data/${node}_${sourceids}_${starthour}_${endhour}_datum_hours"
-
-	python3 ee_solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput $token $secret > $hour_data_path
+        
+	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starthour --enddate $endhour --aggregate Hour --maxoutput $maxoutput --token $token --secret $secret > $hour_data_path
 	sed -i '1d' $hour_data_path
 	sleep 1
-	while IFS=, read createdUTCDate nodeId sourceId localDate localTime watts current voltage current_a current_b current_c frequency volate_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca lineVoltage powerFactor apparentPower reactivePower wattHours wattHoursReverse phase
-        do
+        while IFS=, read createdUTCDate localDate localTime nodeId sourceId watts_min watts_max current_min current_max voltage_min voltage_max frequency_min frequency_max powerFactor_min powerFactor_max apparentPower_min apparentPower_max reactivePower_min reactivePower_max lineVoltage_min lineVoltage_max current_a_min current_a_max current_b_min current_b_max current_c_min current_c_max voltage_a_min voltage_a_max voltage_b_min voltage_b_max voltage_c_min voltage_c_max voltage_ab_min voltage_ab_max voltage_bc_min voltage_bc_max voltage_ca_min voltage_ca_max watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
+	do
         	if [[ $first_row_hours == 0 ]] ; then
 			first_row_hours=1
 			datetime="$localDate $localTime"
@@ -169,12 +169,10 @@ else
 	first_row_minutes=0
 	gap_in_minutes=0
 	minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
-	
-	python3 ee_solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret > $minute_data_path
+	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > $minute_data_path
 	sed -i '1d' $minute_data_path
 	sleep 1
-	
-	while IFS=, read createdUTCDate nodeId sourceId localDate localTime watts current voltage current_a current_b current_c frequency volate_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca lineVoltage powerFactor apparentPower reactivePower wattHours wattHoursReverse phase
+	while IFS=, read createdUTCDate localDate localTime nodeId sourceId watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
         do
         	if [[ $first_row_minutes == 0 ]] ; then
 			first_row_minutes=1
@@ -266,7 +264,7 @@ else
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_days/60/60/24)) " 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 ee_solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret" 2>&1 | tee -a $log_path
-		python3 ee_solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
+		python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
 		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
 		cat data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap 2>&1 | tee -a $log_path
