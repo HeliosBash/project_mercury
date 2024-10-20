@@ -21,7 +21,7 @@ def main():
 
     # Add arguments 
     parser.add_argument("--node", required=True, type=str, help="Node ID (non-empty string)")
-    parser.add_argument("--sourceids", required=True, type=str, help="Comma-separated list of source IDs")
+    parser.add_argument("--sourceids", required=True, type=str, help="Source ID in format %2FVI%2FSU%2FB1%2FGEN%2F1")
     parser.add_argument("--localstartdate", required=True, type=str, help="Local start date in format YYYY-MM-DDTHH%3AMM%3ASS")
     parser.add_argument("--localenddate", required=True, type=str, help="Local end local date in format YYYY-MM-DDTHH%3AMM%3ASS")
     parser.add_argument("--token", required=True, help="API token")
@@ -34,7 +34,7 @@ def main():
     print(f"Node: {args.node}, Source IDs: {args.sourceids}, Start Date: {args.startdate}, End Date: {args.enddate}")
     
     # Call the solar query function with parsed arguments
-    solar_query(args.node, args.sourceids, args.startdate, args.enddate, args.token, args.secret)
+    solar_query(args.node, args.sourceids, args.localstartdate, args.localenddate, args.token, args.secret)
 
 if __name__ == "__main__":
     main()

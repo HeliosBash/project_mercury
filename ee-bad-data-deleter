@@ -8,20 +8,19 @@ maxoutput=$5
 token=$6
 secret=$7 
 
-rm -rf data/${node}_${sourceids}_${month}_scan_for_bad_data
-mkdir data/${node}_${sourceids}_${month}_scan_for_bad_data
-
+rm -rf data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
+mkdir data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
+>data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
 if [ "$#" -ne 7 ]; then
 
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: identify-bad-data [ node ] [ sourceids ] [ month ] [ year ] [ maxoutput ] [ token ] [ secret ]" 2>&1 | tee -a logs/identify-bad-data-run.log
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: ee-bad-data-deleter [node] [sourceids] [month] [year] [maxoutput] [token] [secret]" 2>&1 | tee -a logs/identify-bad-data-run.log
 
 else
 
 
 	startdate="$year-$month-01"
 	enddate=$(date -d "$startdate + 1 month" "+%Y-%m-%d")
-
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for month $startdate" 2>&1 | tee -a logs/identify-bad-data-run.log 
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for month $year-$month" 2>&1 | tee -a logs/identify-bad-data-run.log 
 
 	while [ "$startdate" != "$enddate" ]; do 
   
@@ -33,19 +32,18 @@ else
 			endtime="${startdate}T${hours}%3A59"
 		
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning for bad data between $starttime $endtime" 2>&1 | tee -a logs/identify-bad-data-run.log
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py $node $sourceids $starttime $endtime $maxoutput $token $secret" 2>&1 | tee -a logs/identify-bad-data-run.log
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starttime --enddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a logs/identify-bad-data-run.log
 		
-			python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${month}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_${starttime}_${endtime}_data.csv
+			python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${starttime}_${endtime}_data.csv
 		
-			sed -i '1d' data/${node}_${sourceids}_${month}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_${starttime}_${endtime}_data.csv
-
+			sed -i '1d' data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${starttime}_${endtime}_data.csv
 			while IFS=, read Created localDate localTime nodeId sourceId watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
 			do
         			if [[ $wattHours == 0 || $wattHoursReverse == 0 ]] ; then
-					echo "Created,localDate,localTime,nodeId,sourceId,watts,current,voltage,frequency,powerFactor,apparentPower,reactivePower,lineVoltage,current_a,current_b,current_c,voltage_a,voltage_b,voltage_c,voltage_ab,voltage_bc,voltage_ca,wattHours,wattHoursReverse,phase" 2>&1 | tee -a data/${node}_${sourceids}_${month}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
+					echo "$Created,$localDate,$localTime,$nodeId,$sourceId,$watts,$current,$voltage,$frequency,$powerFactor,$apparentPower,$reactivePower,$lineVoltage,$current_a,$current_b,$current_c,$voltage_a,$voltage_b,$voltage_c,$voltage_ab,$voltage_bc,$voltage_ca,$wattHours,$wattHoursReverse,$phase" 2>&1 | tee -a data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
 				fi
-			done < data/${node}_${sourceids}_${month}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_${starttime}_${endtime}_data.csv
-			sleep 2
+			done < data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+			sleep 1
 		done
 		startdate=$(date -d "$startdate + 1 day" "+%Y-%m-%d")	
 	done
@@ -53,7 +51,7 @@ else
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning ended for month $startdate" 2>&1 | tee -a logs/identify-bad-data-run.log
 
 
-	file=data/${node}_${sourceids}_${month}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
+	file=data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
 	yes_to_all=0
 
 	if [ $(awk -F, '{print NF; exit}' $file) -ne 25 ] ; then
