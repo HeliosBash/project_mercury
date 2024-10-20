@@ -19,6 +19,11 @@ SOLNET AUTOMATION SCRIPTS
 		Usage:		ee-backfiller [nodeid] [GEN sourceids] [UTC start date] [UTC end date] [maxoutput] [lat] [long] [solcast_token] [solnet_token] [solnet_secret]
 		Example:	/bin/bash ee-backfiller 372 /G2/S2/S1/GEN/1 2024-05-08 2024-06-27 1000000 29.658884 -82.334525 solcasttoken solnettoken solnetsecret
 
+	BAD DATA DELETER
+		
+		Description:    Scans for bad data, wherein watts and watthours are 0,  for a given year and month and processes its deletion. 
+		Usage:          ee-bad-data-deleter [nodeid] [GEN sourceids] [month in MM format] [year in YYYY format] [maxoutput] [solnet_token] [solnet_secret]
+                Example:        /bin/bash ee-bad-data-deleter 372 /G2/S2/S1/GEN/1 06 2024 10000000 solnettoken solnetsecret
 
 PYTHON SCRIPTS FOR SOLARNETWORK API
 
