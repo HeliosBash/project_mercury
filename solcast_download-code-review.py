@@ -22,7 +22,7 @@ solcasttoken = sys.argv[5]
 date_validation(start)
 date_validation(end)
 
-bearer = f" Bearer {solcasttoken}"
+bearer = f"Bearer {solcasttoken}"
 headers = {
    'Content-Type': 'application/json',
    'Authorization': bearer
@@ -50,7 +50,7 @@ for i in data.get('estimated_actuals', []):
    ghi=i["ghi"]
    period=i["period"]
    duration=int(re.sub("[PTM]","",period))
-   period_start= (dateobj - timedelta(minutes=duration)).replace(' ','T') + 'Z'
+   period_start=str(dateobj - timedelta(minutes=duration)).replace(' ','T') + 'Z'
    
 
    print (f"{period_end},{period_start},{period},{ghi}")
