@@ -1,0 +1,44 @@
+#!/bin/bash
+
+node=$1
+sourceids=$(echo $2 | sed "s/\//%2F/g")
+startdate=$3
+enddate=$4
+maxoutput=$5
+token=$6
+secret=$7 
+
+rm -rf data/${node}_${sourceids}_${startdate}_${enddate}_data_export
+mkdir data/${node}_${sourceids}_${startdate}_${enddate}_data_export
+
+if [ "$#" -ne 7 ]; then
+
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: data-exporter [node] [sourceids] [start date in yyyy-mm-dd] [end date in yyyy-mm-dd] [maxoutput] [token] [secret]" 2>&1 | tee -a logs/data-export.log
+
+else
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for date range ${startdate} ${enddate}" 2>&1 | tee -a logs/data-export.log
+
+	startdateinloop=$startdate
+
+	while [ "$startdateinloop" != "$enddate" ]; do 
+  
+		for hours in $(seq -f "%02g" 0 23)
+		do
+		
+			starttime="${startdateinloop}T${hours}%3A00"
+			endtime="${startdateinloop}T${hours}%3A59"
+		
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Exporting data between $starttime $endtime" 2>&1 | tee -a logs/data-export.log
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starttime --enddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a logs/data-export.log
+		
+			python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+		
+			sed -i '1d' data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+			sleep 1
+		done
+		startdateinloop=$(date -d "$startdateinloop + 1 day" "+%Y-%m-%d")	
+	done
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning ended for date range ${startdate} ${enddate}" 2>&1 | tee -a logs/data-export.log
+fi
