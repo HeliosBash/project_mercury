@@ -12,7 +12,7 @@ long=$8
 solcast_api_token=$9
 token=${10}
 secret=${11}
-log_path="logs/identify-gap-data-run.log"
+log_path="logs/pyr-data-fill.log"
 
 # Check timezone format if its valid
 
@@ -28,8 +28,11 @@ done
 
 # Converts the entered date to local and then utc
 
-localstartdate=$(TZ=$timezone date -d "$4 00:00:00" )
-localenddate=$(TZ=$timezone date -d "$5 23:59:59" ) 
+#localstartdate=$(TZ=$timezone date -d "$4 00:00:00" )
+#localenddate=$(TZ=$timezone date -d "$5 23:59:59" ) 
+
+localstartdate=$(TZ=$timezone date -d "$4" )
+localenddate=$(TZ=$timezone date -d "$5" ) 
 
 utcstartdate=$(TZ=UTC date -d "$localstartdate" +'%Y-%m-%d %H:%M:%SZ')
 utcenddate=$(TZ=UTC date -d "$localenddate" +'%Y-%m-%d %H:%M:%SZ')
