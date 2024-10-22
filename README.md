@@ -11,7 +11,9 @@ SOLNET AUTOMATION SCRIPTS
 	PYR FILLER
 
         	Description:	It has a similar process as the pyr gap filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data.
-		Usage:		pyr-filler [nodeid] [PYR sourceids] [UTC start date] [UTC end date] [maxoutput] [latitude] [longitude] [solcast_token] [solnet_token] [solnet_secret]
+		Usage:		pyr-filler [nodeid] [PYR sourceids] [Timezone] [Local start date] [Local end date] [max output] [latitude] [longitude] [solcast_token] [solnet_token] [solnet_secret]
+		Example:	/bin/bash pyr-filler 350 %2FPA%2FLO%2FS1%2FPYR%2F1 America/New_York "2024-07-16 20:00" "2024-07-31 23:59" 1000000 39.8712977 -75.6749004 solcasttoken solnettoken solnetsecret
+                                /bin/bash pyr-filler 350 %2FPA%2FLO%2FS1%2FPYR%2F1 America/New_York 2024-07-16\ 20:00 2024-07-31\ 23:59 1000000 39.8712977 -75.6749004 solcasttoken solnettoken solnetsecret
 
 	ENERGY BACKFILLER
 
