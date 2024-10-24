@@ -31,7 +31,7 @@ def main():
     args = parser.parse_args()
 
     # Print parsed arguments for verification
-    print(f"Node: {args.node}, Source IDs: {args.sourceids}, Start Date: {args.startdate}, End Date: {args.enddate}")
+    print(f"Node: {args.node}, Source IDs: {args.sourceids}, Start Date: {args.localstartdate}, End Date: {args.localenddate}")
     
     # Call the solar query function with parsed arguments
     solar_query(args.node, args.sourceids, args.localstartdate, args.localenddate, args.token, args.secret)
