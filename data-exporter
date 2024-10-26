@@ -30,9 +30,9 @@ else
 			endtime="${loopstartdate}T${hours}%3A59"
 		
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Exporting data between $starttime $endtime" 2>&1 | tee -a logs/data-export.log
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query2.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a logs/data-export.log
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query_local.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a logs/data-export.log
 		
-			python3 solnet_query2.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+			python3 solnet_query_local.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv
 
 			sed -i '1d' data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv
 			#filecount=$(cat data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv | wc -l )
