@@ -11,7 +11,7 @@ long=$7
 solcast_api_token=$8
 token=$9
 secret=${10} 
-log_path="logs/identify-gap-data-run.log"
+log_path="logs/pyr-gapfiller.log"
 
 if [ "$#" -ne 10 ]; then
 

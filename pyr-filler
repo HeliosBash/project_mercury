@@ -12,7 +12,7 @@ long=$8
 solcast_api_token=$9
 token=${10}
 secret=${11}
-log_path="logs/pyr-data-fill.log"
+log_path="logs/pyr-filler.log"
 
 # Check timezone format if its valid
 
