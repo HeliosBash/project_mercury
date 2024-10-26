@@ -39,15 +39,15 @@ PYTHON SCRIPTS FOR SOLARNETWORK API
 	Solnet Query 
 
 		Solnet Query UTC
-
-		Description:	Lists irraddiance data for a given date range in UTC
+		
+		Description:	Lists PYR/GEN data for a given date range in UTC
 		Usage:		solnet_query.py --node [nodeid] --sourceids [sourceids] --startdate [UTC startdate] --enddate [UTC enddate] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
 		Example:	python3 solnet_query.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --startdate 2024-05-01T00%3A00 --enddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
 
 
 		Solnet Query Local
 
-                Description:    Lists irraddiance data for a given date range in Local timezone
+                Description:    Lists PYR/GEN data for a given date range in Local timezone
                 Usage:          solnet_query_local.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local startdate] --localenddate [Local enddate] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
                 Example:        python3 solnet_query_local.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-01T00%3A00 --localenddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
 
