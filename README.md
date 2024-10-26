@@ -23,17 +23,33 @@ SOLNET AUTOMATION SCRIPTS
 
 	BAD DATA DELETER
 		
-		Description:    Scans for bad data, wherein watts and watthours are 0,  for a given year and month and processes its deletion. 
+		Description:    Scans for bad data, wherein the values of watts and watthours are 0, for a given year and month and processes its deletion. It does an hourly scan which is found to be effective. 
 		Usage:          ee-bad-data-deleter [nodeid] [GEN sourceids] [month in MM format] [year in YYYY format] [maxoutput] [solnet_token] [solnet_secret]
                 Example:        /bin/bash ee-bad-data-deleter 372 /G2/S2/S1/GEN/1 06 2024 10000000 solnettoken solnetsecret
+
+	PYR/GEN DATA EXPORTER
+
+		Description:	Exports PYR/GEN data for a given date range based on local timezeone and dumps it to a file. 
+		Usage:		data-exporter [nodeid] [GEN sourceids] [start date] [end date] [maxoutput] [solnet_token] [solnet_secret]
+		Example:	/bin/bash data-exporter 350 /PA/LO/S1/PYR/2 2024-10-12 2024-10-16 1000000 solnettoken solnetsecret
+
 
 PYTHON SCRIPTS FOR SOLARNETWORK API
 
 	Solnet Query 
 
+		Solnet Query UTC
+
 		Description:	Lists irraddiance data for a given date range in UTC
 		Usage:		solnet_query.py --node [nodeid] --sourceids [sourceids] --startdate [UTC startdate] --enddate [UTC enddate] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
 		Example:	python3 solnet_query.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --startdate 2024-05-01T00%3A00 --enddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
+
+
+		Solnet Query Local
+
+                Description:    Lists irraddiance data for a given date range in Local timezone
+                Usage:          solnet_query_local.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local startdate] --localenddate [Local enddate] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
+                Example:        python3 solnet_query_local.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-01T00%3A00 --localenddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
 
 
 	Solnet Expire Datum - Preview

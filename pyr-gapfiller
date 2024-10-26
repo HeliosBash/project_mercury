@@ -19,44 +19,77 @@ if [ "$#" -ne 10 ]; then
 
 else
 
+	# Process 1 extracts Solnet PYR data in day aggregates
+        # Sample output file data/379_%2FVI%2FSU%2FB1%2FPYR%2F1_2020-01-31T00%3A00_2020-02-01T23%3A59_datum_days
+        # Sample contents of file
+        # created,localDate localTime nodeId sourceId irradiance_min irradiance_max irradiance irradianceHours
+        # 2020-01-31 04:00:00Z,2020-01-31,00:00,379,/VI/SU/B1/PYR/1,0,846,191.47222222222223,-133365.783
+        # 2020-02-01 04:00:00Z,2020-02-01,00:00,379,/VI/SU/B1/PYR/1,0,845,220.625,5292.3293
+
 	echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
 	
+	# Initialization of variables       
 	first_row_days=0
 	gap_in_days=0
+
+	# File path of the output file with PYR data in day aggregates
 	day_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_days"
+	
+	# Python command to extract PYR data. Note the aggregate parameter is set to Day and dates are in UTC.
 
 	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret > $day_data_path
 	
+	# Removes column header from output file, not needed for the next process
 	sed -i '1d' $day_data_path
 	sleep 1
 
+	# Iterate through the file with PYR data in day aggregates to identify gaps. It compares the local date with a future date that is one day ahead
+    	# If it doesn't match then the start of a possible gap is identified 	
 	while IFS=, read createdUTCDate localDate localTime nodeId sourceId irradiance_min irradiance_max irradiance irradianceHours
 	do
+		# Determines first row
 		if [[ $first_row_days == 0 ]] ; then
 			first_row_days=1
+			# Assigns a variable for the next day date
 			expected_next=$(date -d "$localDate + 1 day" +%Y-%m-%d)
+			# Saves current iteration of dates as previous dates for next iteration
 			prevlocalDate="$localDate"
 			prevUTCDate="$createdUTCDate"
 		else
+			# Compares next iteration of dates to the expected date which is a day ahead, if it matches then not a start gap date, else a possible start gap date 
 			if [[ "$localDate" != "$expected_next" ]] ; then
+				
+				# Next process show that once a possible start gap date is identified, its not yet definitive that the next date iteration is the end gap date as it could be bad data where irradiance hours is zero or null
+				
+				# Gets the line number of the possible start gap
 				start_gap_line_number=$(cat -n $day_data_path | grep $prevlocalDate | awk '{print $1 }')
+				
+				# Line number of the possible end gap
 				next_possible_gap_line_number=$((start_gap_line_number+1))
 
+				# Checks current iteration if it has 0 or empty values for irradiance hours, while this is true, it continues to iterate through the data 
+				# and increments the line number of the possible end gap until the datum is valid
 				while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
 				do
         				irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | awk -F "," '{print $NF}')
                 			next_possible_gap_line_number=$((next_possible_gap_line_number+1))
 				done
 
+				# Once the line number of the end gap is determined, then extract the utc and local dates from the line
 				createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
 				localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
+				
+				# Assign the start and end gap dates to variables
 				startdate=$(echo $prevUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
         			enddate=$(echo $createdUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
+				
+				# Formats the dates to be used in the next process in determining the gap in data aggregated hourly
 				starthour=$( echo $startdate | sed "s/04%3A00%3A00/00%3A00%3A00/g")
 			        endhour=$( echo $enddate | sed "s/04%3A00%3A00/23%3A59%3A00/g" )
-
+				
+				# Used only in the next condition to display the proper output message 
 				gap_in_days=1
 				break
 			else
