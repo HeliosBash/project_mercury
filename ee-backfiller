@@ -478,7 +478,8 @@ else
         		dos2unix  $electrical_energy_data_path
         		sleep 1
         		xz -k $electrical_energy_data_path
-
+			
+			echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 7*************" 2>&1 | tee -a $log_path
                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" 2>&1 | tee -a $log_path
         		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
 			filesizebytes=$(ls -l $electrical_energy_data_path | awk '{print $5}')	
@@ -501,20 +502,35 @@ else
                         		done
 
                         		if [[ "${continue_result^^}" == "Y" ]] ; then
-				
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-                                		sleep 10
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+                                		sleep 5
 					
 						jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $electrical_energy_data_path --token $token --secret $secret)
-                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To preview staged import run : python3 solnet_manage_jobs.py import preview $token $secret $jobid"
-                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply the staged import run : python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
+                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data"
+				                python3 solnet_manage_jobs.py import preview $token $secret $jobid
+                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
+                     				while true
+                     				do
+                        				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: "
+                        				read confirm_result < /dev/tty
 
+                        				if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
+                                				echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                        					break;
+                        					fi
+                     				done
+                     				if [[ "${confirm_result^^}" == "Y" ]] ; then
+                             				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
+                             				python3 solnet_manage_jobs.py import confirm $token $secret $jobid
+                     				else
+                             				echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted"
+                     				fi
 					else
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Process Aborted" 2>&1 | tee -a $log_path
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Aborted" 2>&1 | tee -a $log_path
 					fi
 			else
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
-                                echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process Aborted. "
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process 7 Aborted. "
 
 			fi 
 
