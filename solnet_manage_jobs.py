@@ -41,7 +41,16 @@ def manage_import_jobs(action, token, secret, jobid):
     if action in action_map:
         try:
             response = action_map[action](jobid)
-            print(response)
+            if action == "preview":
+                for element in response['data']['results']:
+                    try:
+                        print(element.get('created', ''), element.get('localDate', ''), element.get('localTime', ''),
+                              element.get('nodeId', ''), element.get('sourceId', ''), element.get('i', ''),
+                              element.get('a', ''), sep=',')
+                    except KeyError as e:
+                        print(f"Missing key in response: {e}")
+            else:
+                print(response)
         except Exception as e:
             print(f"Error occurred: {e}")
     else:
