@@ -21,7 +21,7 @@ else
 
 	echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 ee_solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput $token $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py $node $sourceids $startdate $enddate Day $maxoutput $token $secret" 2>&1 | tee -a $log_path
 	
 	first_row_days=0
 	gap_in_days=0
@@ -79,7 +79,7 @@ else
 		
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 2*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Hours $starthour and $endhour" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 ee_solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput $token $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py $node $sourceids $starthour $endhour Hour $maxoutput $token $secret" 2>&1 | tee -a $log_path
 
 	first_row_hours=0
 	gap_in_hours=0
@@ -164,7 +164,7 @@ else
 	
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 ee_solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py $node $sourceids $startdate $enddate None $maxoutput $token $secret" 2>&1 | tee -a $log_path
 	
 	first_row_minutes=0
 	gap_in_minutes=0
@@ -263,7 +263,7 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in Local Datetime: $new_start_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_days/60/60/24)) " 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 ee_solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret" 2>&1 | tee -a $log_path
 		python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
 		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
