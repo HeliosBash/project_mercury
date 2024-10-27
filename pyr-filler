@@ -168,18 +168,24 @@ else
              fi
 
         done < $solcast_csv_path
-	start_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
-        end_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')	
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Stitching Values for SolarNetwork Event 1" | tee -a $log_path
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
 	
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $(TZ=$timezone date -d "$localstartdate" +'%Y-%m-%d %H:%M:%S')" | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $(TZ=$timezone date -d "$localenddate" +'%Y-%m-%d %H:%M:%S')" | tee -a $log_path
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_irradiancehours" | tee -a $log_path
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $irradiance_data_path" | tee -a $log_path
+        head -n 5 $irradiance_data_path
+        echo "....."
+        tail -n 5 $irradiance_data_path
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file node${node}_PYRGAP_SolNetIMport_${runtime}.csv" | tee -a $log_path
+	#start_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
+        #end_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')	
+        #echo "$(date +'%Y-%m-%d %H:%M:%S') Stitching Values for SolarNetwork Event 1" | tee -a $log_path
+        #echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+        #echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+	
+	#echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $(TZ=$timezone date -d "$localstartdate" +'%Y-%m-%d %H:%M:%S')" | tee -a $log_path
+	#echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $(TZ=$timezone date -d "$localenddate" +'%Y-%m-%d %H:%M:%S')" | tee -a $log_path
+        #echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_irradiancehours" | tee -a $log_path
+        #echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" | tee -a $log_path
+
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file $irradiance_data_path" | tee -a $log_path
         dos2unix $irradiance_data_path
         sleep 1
         xz -k $irradiance_data_path
@@ -215,11 +221,11 @@ else
 		     echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
 		     while true
                      do
-                        echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
+                        echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: "
                         read confirm_result < /dev/tty
 
                         if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
                         break;
                         fi
                      done
@@ -227,11 +233,11 @@ else
 			     echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
 			     python3 solnet_manage_jobs.py import confirm $token $secret $jobid
 		     else
-			     echo  "$(date +'%Y-%m-%d %H:%M:%S') Process Complete"
+			     echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted"
 		     fi
 
 	         else
-                      echo "$(date +'%Y-%m-%d %H:%M:%S') Process Complete" 2>&1 | tee -a $log_path
+                      echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Completed" 2>&1 | tee -a $log_path
                  fi
              else
                   echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path

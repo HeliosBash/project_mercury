@@ -429,7 +429,6 @@ else
 
 				irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
 				electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
-				ghitotal=0
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Trimming File for periods between $startperiod and $endperiod" | tee -a $log_path
 				tail -n +2 $solcast_csv_path | while IFS=, read periodend periodstart period ghi
 				do
@@ -453,8 +452,6 @@ else
             					echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
             					echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
             					a=1
-            					ghitotal=$((ghi+ghitotal))
-            					echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
         				else
 						d312=$(echo "scale=8; $ghi/12" | bc)
 						if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
@@ -463,12 +460,14 @@ else
                                                         nir=$(echo "$e2 + $d312" | bc  )
                                                 fi
             					e2=$nir
-            					ghitotal=$((ghi+ghitotal))
-            					echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
            					echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
         				fi
 				done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
 
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $irradiance_data_path" | tee -a $log_path
+                                head -n 5 $irradiance_data_path
+                                echo "....."
+				tail -n 5 $irradiance_data_path
 				snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
 				snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
 				inner_start_gap_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
@@ -487,8 +486,7 @@ else
                                 echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" | tee -a $log_path
                                 echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_gap_irradiancehours" | tee -a $log_path
                                 echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_gap_irradiancehours" | tee -a $log_path
-
-        			echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file node${node}_PYRGAP_SolNetIMport_${runtime}.csv" | tee -a $log_path
+        			echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file $irradiance_data_path" | tee -a $log_path
         			dos2unix $irradiance_data_path
         			sleep 1
        	 			xz -k $irradiance_data_path
@@ -532,7 +530,7 @@ else
                         				read confirm_result < /dev/tty
 
                         				if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                				echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                                				echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
                         					break;
                         				fi
 						done

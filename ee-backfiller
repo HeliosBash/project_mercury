@@ -453,6 +453,11 @@ else
                 		echo "$node,$sid,$ddt,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
         		done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
 
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" | tee -a $log_path
+                        head -n 5 $electrical_energy_data_path
+                        echo "....."
+                        tail -n 5 $electrical_energy_data_path
+
         		snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
                         snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
                         inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
@@ -515,7 +520,7 @@ else
                         				read confirm_result < /dev/tty
 
                         				if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                				echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                                				echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
                         					break;
                         					fi
                      				done
