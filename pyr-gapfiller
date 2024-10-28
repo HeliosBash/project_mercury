@@ -1,23 +1,71 @@
 #!/bin/bash
 
-node=$1
-sid=$2
-sourceids=$(echo $sid | sed "s/\//%2F/g")
-startdate="$3T00%3A00"
-enddate="$4T23%3A59"
-maxoutput=$5
-lat=$6
-long=$7
-solcast_api_token=$8
-token=$9
-secret=${10} 
-log_path="logs/pyr-gapfiller.log"
+while [ $# -gt 0 ] ; do
+    case "$1" in
+    --node*|-n*)
+      if [[ "$1" != *=* ]]; then shift; fi # Value is next arg if no `=`
+      node="${1#*=}"
+      ;;
+    --sourceid*|-i*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      sid="${1#*=}"
+      ;;
+    --startdate*|-s*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      startdate="${1#*=}"
+      ;;
+    --enddate*|-e*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      enddate="${1#*=}"
+      ;;
+    --maxoutput*|-m*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      maxoutput="${1#*=}"
+      ;;
+    --latitude*|-a*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      lat="${1#*=}"
+      ;;
+    --longitude*|-o*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      long="${1#*=}"
+      ;;
+    --api*|-p*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      solcast_api_token="${1#*=}"
+      ;;
+    --token*|-k*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      token="${1#*=}"
+      ;;
+    --secret*|-c*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      secret="${1#*=}"
+      ;;
+    --help|-h)
+      printf "Usage: pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE IDS] --startdate|-s [START DATE] --enddate|-e [END DATE] --maxoutput|-m [MAX OUTPUT] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
+      exit 0
+      ;;
+    *)
+      >&2 printf "Error: The following arguments are required --node --sourceid --startdate --enddate --maxoutput --latitude --longitude --api --token --secret \n"
+      exit 1
+      ;;
+  esac
+  shift
+done
 
-if [ "$#" -ne 10 ]; then
-
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: pyr-gapfiller [ node ] [ sourceids ] [ startdate ] [ enddate ] [ maxoutput ] [ lat ] [ long ] [ solcast_token ] [ solne_token ] [ solnet_secret ]" 2>&1 | tee -a $log_path
+if [[ -z "$node" || -z "$sid" || -z "$startdate" || -z "$enddate" || -z "$maxoutput" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
+        
+	printf "Error: The following arguments are required --node --sourceids --startdate --enddate --maxoutput --latitude --longitude --api --token --secret \n"
 
 else
+
+	sourceids=$(echo $sid | sed "s/\//%2F/g")
+	startdate="${startdate}T00%3A00"
+	enddate="${enddate}T23%3A59"
+	log_path="logs/pyr-gapfiller.log"
+        
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-gapfiller --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --maxoutput $maxoutput --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 	# Process 1 extracts Solnet PYR data in day aggregates
         # Sample output file data/379_%2FVI%2FSU%2FB1%2FPYR%2F1_2020-01-31T00%3A00_2020-02-01T23%3A59_datum_days
