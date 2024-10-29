@@ -5,27 +5,26 @@ SOLNET AUTOMATION SCRIPTS
 	PYR GAP FILLER
 
 		Description:	Identifies PYR gaps and fills the gap with irradiance data calculated from data downloaded from solcast.
-		Usage 1: 	pyr-gapfiller [nodeid] [PYR sourceids] [UTC start date] [UTC end date] [maxoutput] [lattitue] [longitude] [solcast_token] [solnet_token] [solnet_secret] 
-		Example: 	/bin/bash pyr-gapfiller 379 /VI/SU/B2/PYR/1 2021-08-31 2021-09-03 1000000 18.343015 -64.911997 solcasttoken solnettoken solnetsecret
+		Usage:		pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATE] --enddate|-e [END DATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+		Example: 	/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate 2021-08-31 --enddate 2021-09-03 --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
 
 	PYR FILLER
 
-        	Description:	It has a similar process as the pyr gap filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data.
-		Usage:		pyr-filler [nodeid] [PYR sourceids] [Timezone from TZ Database] [Local start datetime] [Local end datetime] [max output] [latitude] [longitude] [solcast_token] [solnet_token] [solnet_secret]
-		Example:	/bin/bash pyr-filler 350 /PA/LO/S1/PYR/1 America/New_York "2024-07-16 20:00" "2024-07-31 23:59" 1000000 39.8712977 -75.6749004 solcasttoken solnettoken solnetsecret
-                                /bin/bash pyr-filler 350 /PA/LO/S1/PYR/1 America/New_York 2024-07-16\ 20:00 2024-07-31\ 23:59 1000000 39.8712977 -75.6749004 solcasttoken solnettoken solnetsecret
+		Description:	It has a similar process as the pyr gap filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data.
+		Usage:		pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME] --enddatetime|-e [END DATETIME] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+		Example:        /bin/bash pyr-filler --node 350 --sourceid /PA/LO/S1/PYR/1 --timezone America/New_York --startdatetime 2024-07-16\ 20:00 --enddatetime 2024-07-31\ 23:59 --latitude 39.8712977 --longitude -75.6749004 --api solcasttoken --token solnettoken --secret solnetsecret
 
 	ENERGY BACKFILLER
 
-		Description:	Fixes energy generation spikes caused by energy generation gaps. The energy generation of the spike is distributed across the gap and the ratio is driven by the irradiance data downloaded from solcast.  
-		Usage:		ee-backfiller [nodeid] [GEN sourceids] [UTC start date] [UTC end date] [maxoutput] [lat] [long] [solcast_token] [solnet_token] [solnet_secret]
-		Example:	/bin/bash ee-backfiller 372 /G2/S2/S1/GEN/1 2024-05-08 2024-06-27 1000000 29.658884 -82.334525 solcasttoken solnettoken solnetsecret
+		Description:	Fixes energy generation spikes caused by energy generation gaps. The total energy generation of the spike is distributed across the gap and the ratio used is driven by the irradiance data downloaded from solcast.  
+		Usage:		ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATE] --enddate|-e [ENDDATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+		Example:	/bin/bash ee-backfiller --node 372 --sourceid /G2/S2/S1/GEN/1 --startdate 2024-05-08 --enddate 2024-06-27 --latitude 29.658884 --longitude -82.334525 --api solcasttoken --token solnettoken --secret solnetsecret
 
 	BAD DATA DELETER
 		
 		Description:    Scans for bad data, wherein the values of watts and watthours are 0, for a given year and month and processes its deletion. It does an hourly scan which is found to be effective. 
-		Usage:          ee-bad-data-deleter [nodeid] [GEN sourceids] [month in MM format] [year in YYYY format] [maxoutput] [solnet_token] [solnet_secret]
-                Example:        /bin/bash ee-bad-data-deleter 372 /G2/S2/S1/GEN/1 06 2024 10000000 solnettoken solnetsecret
+		Usage:          ee-bad-data-deleter --node [nodeid] --sourceid [GEN sourceids] --month [month in MM format] --year [year in YYYY format] --token [solnet_token] --secret [solnet_secret]
+                Example:        /bin/bash ee-bad-data-deleter --node 372 --sourceid /G2/S2/S1/GEN/1 --month 06 --year 2024 --token solnettoken --secret solnetsecret
 
 	PYR/GEN DATA EXPORTER
 

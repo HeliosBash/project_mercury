@@ -1,21 +1,57 @@
 #!/bin/bash
 
-node=$1
-sourceids=$(echo $2 | sed "s/\//%2F/g")
-month=$3
-year=$4
-maxoutput=$5
-token=$6
-secret=$7 
+while [ $# -gt 0 ] ; do
+    case "$1" in
+    --node*|-n*)
+      if [[ "$1" != *=* ]]; then shift; fi # Value is next arg if no `=`
+      node="${1#*=}"
+      ;;
+    --sourceid*|-i*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      sid="${1#*=}"
+      ;;
+    --month*|-m*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      month="${1#*=}"
+      ;;
+    --year*|-y*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      year="${1#*=}"
+      ;;
+    --token*|-k*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      token="${1#*=}"
+      ;;
+    --secret*|-c*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      secret="${1#*=}"
+      ;;
+    --help|-h)
+      printf "Usage: ee-bad-data-deleter --node|-n [NODE] --sourceid|-i [SOURCEID] --month|-m [MONTH] --year|-y [YEAR] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]\n" # Flag argument
+      exit 0
+      ;;
+    *)
+      >&2 printf "Error: The following arguments are required --node --sourceid --month --year --token --secret \n"
+      exit 1
+      ;;
+  esac
+  shift
+done
 
-rm -rf data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
-mkdir data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
->data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
-if [ "$#" -ne 7 ]; then
+if [[ -z "$node" || -z "$sid" || -z "$month" || -z "$year" || -z "$token" || -z "$secret" ]] ; then
 
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: ee-bad-data-deleter [node] [sourceids] [month] [year] [maxoutput] [token] [secret]" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Error: The following arguments are required --node --sourceid --month --year --token --secret" 2>&1 | tee -a logs/ee-bad-data-deleter.log
 
 else
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-bad-data-deleter --node $node --sourceids $sid --month $month --year $year --token $token --secret $secret" 2>&1 | tee -a $log_path
+
+
+	sourceids=$(echo $sid | sed "s/\//%2F/g")
+	maxoutput=1000000
+
+	rm -rf data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
+	mkdir data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
+	>data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
 
 
 	startdate="$year-$month-01"

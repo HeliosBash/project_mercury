@@ -22,10 +22,6 @@ while [ $# -gt 0 ] ; do
       if [[ "$1" != *=* ]]; then shift; fi
       enddatetime="${1#*=}"
       ;;
-    --maxoutput*|-m*)
-      if [[ "$1" != *=* ]]; then shift; fi
-      maxoutput="${1#*=}"
-      ;;
     --latitude*|-a*)
       if [[ "$1" != *=* ]]; then shift; fi
       lat="${1#*=}"
@@ -47,25 +43,28 @@ while [ $# -gt 0 ] ; do
       secret="${1#*=}"
       ;;
     --help|-h)
-      printf "Usage: pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME] --enddatetime|-e [END DATETIME] --maxoutput|-m [MAX OUTPUT] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
+      printf "Usage: pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME] --enddatetime|-e [END DATETIME] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
       exit 0
       ;;
     *)
-      >&2 printf "Error: The following arguments are required --node --sourceid --timezone --startdatetime --enddatetime --maxoutput --latitude --longitude --api --token --secret \n"
+      >&2 printf "Error: The following arguments are required --node --sourceid --timezone --startdatetime --enddatetime --latitude --longitude --api --token --secret \n"
       exit 1
       ;;
   esac
   shift
 done
 
-if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$enddatetime" || -z "$maxoutput" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
+if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
 
-	printf "Error: The following arguments are required --node --sourceids --startdate --enddate --maxoutput --latitude --longitude --api --token --secret \n"
+	printf "Error: The following arguments are required --node --sourceid --startdate --enddate --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
 
 else
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-filler --node $node --sourceid $sid --timezone $timezone --localstartdate \"$localstartdate\" --enddate \"$localenddate\" --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
+
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
 	log_path="logs/pyr-filler.log"
-	
+	maxoutput=1000000
+
 	# Check timezone format if its valid
 	
 	check_timezone=$(awk '/^Z/ { print $2 }; /^L/ { print $timezone }' /usr/share/zoneinfo/tzdata.zi | grep -w $timezone)
@@ -92,7 +91,6 @@ else
 	startdate=$(echo $utcstartdate | sed 's/ /T/g;s/:/%3A/g')
 	enddate=$(echo $utcenddate | sed 's/ /T/g;s/:/%3A/g')
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-filler --node $node --sourceids $sourceids --timezone $timezone --localstartdate \"$localstartdate\" --enddate \"$localenddate\" --maxoutput $maxoutput --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Local : $localstartdate" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') UTC   : $utcstartdate" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') UTC Formatted : $startdate" 2>&1 | tee -a $log_path
