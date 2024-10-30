@@ -17,14 +17,14 @@ SOLNET AUTOMATION SCRIPTS
 	ENERGY BACKFILLER
 
 		Description:	Fixes energy generation spikes caused by energy generation gaps. The total energy generation of the spike is distributed across the gap and the ratio used is driven by the irradiance data downloaded from solcast.  
-		Usage:		ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATE] --enddate|-e [ENDDATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
-		Example:	/bin/bash ee-backfiller --node 372 --sourceid /G2/S2/S1/GEN/1 --startdate 2024-05-08 --enddate 2024-06-27 --latitude 29.658884 --longitude -82.334525 --api solcasttoken --token solnettoken --secret solnetsecret
+		Usage:		ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATETIME in "YYYY-MM-DD HH:MM"] --enddatetime|-e [ENDDATETIME in "YYYY-MM-DD HH:MM"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+		Example:	/bin/bash ee-backfiller --node 372 --sourceid /G2/S2/S1/GEN/1 --startdatetime "2023-10-04 20:00" --enddatetime "2023-10-17 00:00" --latitude 29.658884 --longitude -82.334525 --api solcasttoken --token solnettoken --secret solnetsecret
 
 	BAD DATA DELETER
 		
 		Description:    Scans for bad data, wherein the values of watts and watthours are 0, for a given year and month and processes its deletion. It does an hourly scan which is found to be effective. 
 		Usage:          ee-bad-data-deleter --node [nodeid] --sourceid [GEN sourceids] --month [month in MM format] --year [year in YYYY format] --token [solnet_token] --secret [solnet_secret]
-                Example:        /bin/bash ee-bad-data-deleter --node 372 --sourceid /G2/S2/S1/GEN/1 --month 06 --year 2024 --token solnettoken --secret solnetsecret
+		Example:        /bin/bash ee-bad-data-deleter --node 372 --sourceid /G2/S2/S1/GEN/1 --month 06 --year 2024 --token solnettoken --secret solnetsecret
 
 	PYR/GEN DATA EXPORTER
 

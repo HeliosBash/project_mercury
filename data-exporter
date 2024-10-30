@@ -1,24 +1,55 @@
 #!/bin/bash
 
-node=$1
-sourceids=$(echo $2 | sed "s/\//%2F/g")
-startdate=$3
-enddate=$4
-maxoutput=$5
-token=$6
-secret=$7 
+while [ $# -gt 0 ] ; do
+    case "$1" in
+    --node*|-n*)
+      if [[ "$1" != *=* ]]; then shift; fi # Value is next arg if no `=`
+      node="${1#*=}"
+      ;;
+    --sourceid*|-i*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      sid="${1#*=}"
+      ;;
+    --startdate*|-s*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      startdate="${1#*=}"
+      ;;
+    --enddate*|-e*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      enddate="${1#*=}"
+      ;;
+    --token*|-k*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      token="${1#*=}"
+      ;;
+    --secret*|-c*)
+      if [[ "$1" != *=* ]]; then shift; fi
+      secret="${1#*=}"
+      ;;
+    --help|-h)
+      printf "Usage: data-exporter --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [START DATE IN YYYY-MM-DD]  --enddate|-e [END DATE IN YYYY-MM-DD] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]\n" # Flag argument
+      exit 0
+      ;;
+    *)
+      >&2 printf "Error: The following arguments are required --node --sourceid --startdate --enddate --token --secret \n"
+      exit 1
+      ;;
+  esac
+  shift
+done
 
-rm -rf data/${node}_${sourceids}_${startdate}_${enddate}_data_export
-mkdir data/${node}_${sourceids}_${startdate}_${enddate}_data_export
->data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv
-if [ "$#" -ne 7 ]; then
+if [[ -z "$node" || -z "$sid" || -z "$startdate" || -z "$enddate" || -z "$token" || -z "$secret" ]] ; then
 
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Incorrect Number of Parameters. Usage: data-exporter [node] [sourceids] [start date in yyyy-mm-dd] [end date in yyyy-mm-dd] [maxoutput] [token] [secret]" 2>&1 | tee -a logs/data-export.log
+	 echo "$(date +'%Y-%m-%d %H:%M:%S') Error: The following arguments are required --node --sourceid --startdate --enddate --token --secret"  2>&1 | tee -a logs/data-export.log
 
 else
+	sourceids=$(echo $sid | sed "s/\//%2F/g")
+	maxoutput=1000000
+	rm -rf data/${node}_${sourceids}_${startdate}_${enddate}_data_export
+	mkdir data/${node}_${sourceids}_${startdate}_${enddate}_data_export
+	>data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv
 
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for date range ${startdate} ${enddate}" 2>&1 | tee -a logs/data-export.log
-
 	loopstartdate=$startdate
 	loopenddate=$(date -d "$enddate + 1 day" "+%Y-%m-%d")
 	while [ "$loopstartdate" != "$loopenddate" ]; do 

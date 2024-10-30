@@ -10,13 +10,13 @@ while [ $# -gt 0 ] ; do
       if [[ "$1" != *=* ]]; then shift; fi
       sid="${1#*=}"
       ;;
-    --startdate*|-s*)
+    --startdatetime*|-s*)
       if [[ "$1" != *=* ]]; then shift; fi
-      startdate="${1#*=}"
+      startdatetime="${1#*=}"
       ;;
-    --enddate*|-e*)
+    --enddatetime*|-e*)
       if [[ "$1" != *=* ]]; then shift; fi
-      enddate="${1#*=}"
+      enddatetime="${1#*=}"
       ;;
     --latitude*|-a*)
       if [[ "$1" != *=* ]]; then shift; fi
@@ -39,27 +39,27 @@ while [ $# -gt 0 ] ; do
       secret="${1#*=}"
       ;;
     --help|-h)
-      printf "Usage: ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATE] --enddate|-e [ENDDATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
+      printf "Usage: ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [ENDDATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
       exit 0
       ;;
     *)
-      >&2 printf "Error: The following arguments are required --node --sourceid --startdate --enddate --latitude --longitude --api --token --secret \n"
+      >&2 printf "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude --longitude --api --token --secret \n"
       exit 1
       ;;
   esac
   shift
 done
 
-if [[ -z "$node" || -z "$sid" || -z "$startdate" || -z "$enddate" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
+if [[ -z "$node" || -z "$sid" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
 
-        printf "Error: The following arguments are required --node --sourceid --startdate --enddate --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
+        printf "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
 
 else
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-backfiller --node $node --sourceids $sid --startdate $startdate --enddate $enddate --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-backfiller --node $node --sourceids $sid --startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
-	startdate="${startdate}T00%3A00"
-	enddate="${enddate}T23%3A59"
+	startdate=$(echo ${startdatetime} | sed "s/ /T/g;s/:/%3A/g")
+	enddate=$(echo ${enddatetime} | sed "s/ /T/g;s/:/%3A/g")
 	log_path="logs/ee-backfiller.log"
 	maxoutput=1000000
 	echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
@@ -94,11 +94,14 @@ else
 
 				createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
 				localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
-				startdate=$(echo $prevUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
-        			enddate=$(echo $createdUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
-				starthour=$( echo $startdate | sed "s/04%3A00%3A00/00%3A00%3A00/g")
-			        endhour=$( echo $enddate | sed "s/04%3A00%3A00/23%3A59%3A00/g" )
-
+				#startdate=$(echo $prevUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
+        			#enddate=$(echo $createdUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
+				#starthour=$( echo $startdate | sed "s/04%3A00%3A00/00%3A00%3A00/g")
+			        #endhour=$( echo $enddate | sed "s/04%3A00%3A00/23%3A59%3A00/g" )
+				startdate=$(echo $prevUTCDate | awk '{printf $1}')
+                                enddate=$(echo $createdUTCDate | awk '{printf $1}')
+				starthour="${startdate}T00%3A00"
+                                endhour="${enddate}T23%3A59"
 				gap_in_days=1
 				break
 			else
@@ -242,14 +245,23 @@ else
 					end_gap_created=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
 					start_gap_created_halfsec=$(echo $start_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')
 					end_gap_created_halfsec=$(echo $end_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')	
-
-					start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 4 )
-					start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 5 )
-					start_gap_watthours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
-					end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 4 )	
-					end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 5 )	
-					end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
-                                	datetime=$(echo $createdUTCDate | sed "s/Z//g")
+					
+					# columns from node319 spike fix
+					#start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 4 )
+					#start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 5 )
+					#start_gap_watthours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
+					#end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 4 )	
+					#end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 5 )	
+					#end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
+                                	
+					start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
+                                        start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
+                                        start_gap_watthours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
+                                        end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
+                                        end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
+                                        end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
+					
+					datetime=$(echo $createdUTCDate | sed "s/Z//g")
                         		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
                         		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec and $end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec" 2>&1 | tee -a $log_path
 					
@@ -496,14 +508,14 @@ else
                         snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
                         inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
                         inner_end_gap_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Stitching Values for SolarNetwork Event 1" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_gap_watthours" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_gap_watthours" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Stitching Values for SolarNetwork Event 2" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
