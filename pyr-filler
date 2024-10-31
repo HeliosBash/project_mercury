@@ -227,6 +227,46 @@ else
         		filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')
         		filsesizemb=$(($filesizebytes/1048576))
 
+        		echo "$(date +'%Y-%m-%d %H:%M:%S') Determining Stitch Parameters" 2>&1 | tee -a $log_path
+			extend_enddate=$(date --date "$utcenddate + 15 days"  +'%Y-%m-%d %H:%M:%SZ'  | sed 's/ /T/g;s/:/%3A/g')
+			
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $enddate --enddate $extend_enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
+			python3 solnet_query.py --node $node --sourceids $sourceids --startdate $enddate --enddate $extend_enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${enddate}_${extend_enddate}_datum
+			
+        		start_irradiancehours=0
+        		endlocaldate=$(head -n 2 data/${node}_${sourceids}_${enddate}_${extend_enddate}_datum | tail -n 1 | awk -F ',' '{print $2}' )
+        		endlocaltime=$(head -n 2 data/${node}_${sourceids}_${enddate}_${extend_enddate}_datum | tail -n 1 | awk -F ',' '{print $3}' )
+        		end_irradiancehours=$(head -n 2 data/${node}_${sourceids}_${enddate}_${extend_enddate}_datum | tail -n 1| awk -F ',' '{print $NF}')
+        		
+			start_localdatetime_epoch=$(date -d "$localstartdate" +%s)
+        		end_localdatetime_epoch=$(date -d "$endlocaldate $endlocaltime" +%s)
+        		new_start_localdatetime_epoch=$((start_localdatetime_epoch + 5))
+        		new_end_localdatetime_epoch=$((end_localdatetime_epoch - 5))
+        		
+			snevent1_start_end_datetime=$(date --date @$new_start_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+        		snevent2_start_end_datetime=$(date --date @$new_end_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+
+			inner_start_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
+                        inner_end_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')
+
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Fill for PYR" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_irradiancehours" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_irradiancehours" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Fill for PYR" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_irradiancehours" | tee -a $log_path
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" | tee -a $log_path
+
+			echo $stitchlocaldate $stitchlocaltime $end_gap_irradiancehours
+
+
         		if [ $filsesizemb -lt 20 ] ; then
            			echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
            			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret"
