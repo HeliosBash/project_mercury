@@ -1,13 +1,22 @@
-# Documentation
+# SOLNET AUTOMATION SCRIPTS
 
-SOLNET AUTOMATION SCRIPTS
+## PYR GAP FILLER
 
-	PYR GAP FILLER
+- [ ] Description:	
 
-		Description:	Identifies PYR gaps and fills the gap with irradiance data calculated from data downloaded from solcast.
-		Usage:		pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATE] --enddate|-e [END DATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
-		Example: 	/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate 2021-08-31 --enddate 2021-09-03 --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
+Identifies PYR gaps and fills the gap with irradiance data calculated from data downloaded from solcast.
 
+- [ ] Usage:		
+
+```
+pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATE] --enddate|-e [END DATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+```
+
+- [ ] Example: 	
+
+```
+/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate 2021-08-31 --enddate 2021-09-03 --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
+```
 	PYR FILLER
 
 		Description:	It has a similar process as the pyr gap filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data.
