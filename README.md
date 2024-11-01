@@ -85,7 +85,7 @@
 - [ ] Example:
 	```
 	python3 solnet_query.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --startdate 2024-05-01T00%3A00 --enddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
-		```
+	```
 
 ### Solnet Query Local
 
@@ -98,7 +98,7 @@
 
 - [ ] Example:        
 	```
-python3 solnet_query_local.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-01T00%3A00 --localenddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
+	python3 solnet_query_local.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-01T00%3A00 --localenddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
 	```
 
 ## Solnet Expire Datum - Preview
