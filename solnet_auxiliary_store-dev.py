@@ -2,15 +2,16 @@ from solarnetwork_python.client import Client
 import sys
 import argparse
 from datetime import datetime
+import json
 
-def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, finalValue, startValue, token, secret):
+def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, eventLocalDate, eventLocalTime, finalValue, startValue, token, secret):
     """Import data from a specified node and data sources"""
     
     client = Client(token, secret)
     
-    id = sourceids.split("%2F")
+    id = sourceids.split("/")
     currentDateTime = datetime.now()
-    created = currentDateTime.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
+    created = currentDateTime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
     final = {
             "wattHours" : finalValue
@@ -41,7 +42,7 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, finalV
         "priority": 1,
         "userName": f"{username}",
         "datumType": "Reset",
-        "startDate": "f{eventDate}",
+        "startDate": f"{eventDate}",
         "description": f"{cause}"
     }
 
@@ -52,24 +53,25 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, finalV
     auxiliary_data={
         "created": f"{created}",
         "nodeId": f"{node}",
-        "sourceId": "{sourceids}",
+        "sourceIds": f"{sourceids}",
         "type": "Reset",
+        "localDate": f"{eventLocalDate}",
+        "localTime": f"{eventLocalTime}",
         "final": {
                 "a": {
-                    "wattHours": finalValue
+                    "irradianceHours": finalValue
                     }
                 },
         "start": {
                 "a": {
-                    "wattHours": startValue
+                    "irradianceHours": startValue
                 }
         },
         "meta": {
                 "pm": pm
                 }
         }
-
-
+    
     try:
         resp = client.store_auxiliary(auxiliary_data)
         print(resp.get)
@@ -83,13 +85,15 @@ if __name__ == "__main__":
     parser.add_argument("--username", required=True, type=str, help="Name of user with Ecosuite access")
     parser.add_argument("--userid", required=True, type=str, help="ID of user with Ecosuite access")
     parser.add_argument("--cause", required=True, type=str, help="Cause or description of the event")
-    parser.add_argument("--eventDate", required=True, type=str, help="event data in local timezone")
-    parser.add_argument("--finalValue", required=True, type=str, help="Final irradiancehours or watthours value")
-    parser.add_argument("--startValue", required=True, type=str, help="Start irradiancehours or watthours value")
+    parser.add_argument("--utceventdate", required=True, type=str, help="event date in utc timezone")
+    parser.add_argument("--localeventdate", required=True, type=str, help="event date in local timezone")
+    parser.add_argument("--localeventtime", required=True, type=str, help="event time in local timezone")
+    parser.add_argument("--finalvalue", required=True, type=str, help="Final irradiancehours or watthours value")
+    parser.add_argument("--startvalue", required=True, type=str, help="Start irradiancehours or watthours value")
     parser.add_argument("--token", required=True, type=str, help="API token for authentication.")
     parser.add_argument("--secret", required=True, type=str, help="API secret for authentication.")
     
     args = parser.parse_args()
     
-    solnet_auxiliary(args.node, args.sourceids, args.username, args.userid, args.cause, args.eventDate, args.finalValue, args.startValue, args.token, args.secret)
+    solnet_auxiliary(args.node, args.sourceids, args.username, args.userid, args.cause, args.utceventdate, args.localeventdate, args.localeventtime, args.finalvalue, args.startvalue, args.token, args.secret)
 
