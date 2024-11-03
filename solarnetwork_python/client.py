@@ -308,3 +308,39 @@ class Client:
             raise Exception("Unsuccessful API call")
 
         return v["data"]
+
+
+    def store_auxiliary(self, auxiliarydata):
+        # The time has to be in UTC
+        now = datetime.utcnow()
+        date = get_x_sn_date(now)
+        path = "/solaruser/api/v1/sec/datum/auxiliary"
+
+        # These should be present for all API calls
+        headers = {"content-type": "application/json; charset=UTF-8", "host": "data.solarnetwork.net", "x-sn-date": date}
+
+        body = json.dumps(auxiliarydata)
+
+        auth = generate_auth_header(
+            self.token, self.secret, "POST", path, "", headers, body, now
+        )
+
+        resp = requests.post(
+            url="https://data.solarnetwork.net/solaruser/api/v1/sec/datum/auxiliary",
+            data=body,
+
+            # Make sure to actually include the headers given by the previous
+            # headers argument
+            headers={
+                "Content-Type": "application/json; charset=UTF-8",
+                "host": "data.solarnetwork.net",
+                "x-sn-date": date,
+                "Authorization": auth,
+            },
+        )
+        v = resp.json()
+        if v["success"] != True:
+            raise Exception("Unsuccessful API call")
+
+        return v["data"]
+

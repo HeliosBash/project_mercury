@@ -1,6 +1,7 @@
 from solarnetwork_python.client import Client
 import sys
 import argparse
+from datetime import datetime
 
 def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, finalValue, startValue, token, secret):
     """Import data from a specified node and data sources"""
@@ -8,6 +9,8 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, finalV
     client = Client(token, secret)
     
     id = sourceids.split("%2F")
+    currentDateTime = datetime.now()
+    created = currentDateTime.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     final = {
             "wattHours" : finalValue

@@ -39,7 +39,7 @@ while [ $# -gt 0 ] ; do
       secret="${1#*=}"
       ;;
     --help|-h)
-      printf "Usage: pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE IDS] --startdate|-s [START DATE] --enddate|-e [END DATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
+      printf "Usage: pyr-gapfiller-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE IDS] --startdate|-s [START DATE] --enddate|-e [END DATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
       exit 0
       ;;
     *)
@@ -56,7 +56,7 @@ if [[ -z "$node" || -z "$sid" || -z "$startdate" || -z "$enddate" || -z "$lat" |
 
 else
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-gapfiller --node $node --sourceid $sid --startdate $startdate --enddate $enddate --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-gapfiller-2.0 --node $node --sourceid $sid --startdate $startdate --enddate $enddate --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
 	startdate="${startdate}T00%3A00"
@@ -348,16 +348,18 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
 		
 		if [ $gap_count -gt 0 ]; then
+
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap " 2>&1 | tee -a $log_path
 			cat data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap 2>&1 | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret to validate count of datum in gap" 2>&1 | tee -a $log_path
+			
 			result_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path		
 			if [ $result_count -ne $gap_count ] ; then
-                                        echo "$(date +'%Y-%m-%d %H:%M:%S') Count doesn't match, adjust date and delete manually" 2>&1 | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Count doesn't match, adjust date and delete manually" 2>&1 | tee -a $log_path
                         else
-                                        echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of datum in gap."
-                                        echo "$(date +'%Y-%m-%d %H:%M:%S') Command python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret will be executed. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of datum in gap." | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Command python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret will be executed. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
                         fi
 
 		fi
@@ -404,7 +406,7 @@ else
 		fi
 
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
 		sleep 5
 		/bin/bash $solcast_script_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Process 5 Completed" | tee -a $log_path
@@ -504,7 +506,7 @@ else
 			echo  "$(date +'%Y-%m-%d %H:%M:%S') If you won't proceed with the process, staged import will be deleted with python3 solnet_manage_jobs.py import delete $token $secret $jobid" 2>&1 | tee -a $log_path
 			while true
 			do
-                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]:" 2>&1 | tee -a $log_path
+                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]:" 2>&1 | tee -a $log_path
                         	read confirm_result < /dev/tty
 
                         	if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
@@ -529,7 +531,7 @@ else
 				done
 	
 
-				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
+				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
 				sleep 10
 				python3 solnet_manage_jobs.py import confirm $token $secret $jobid
                      		
