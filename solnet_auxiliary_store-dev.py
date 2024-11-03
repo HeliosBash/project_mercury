@@ -10,7 +10,7 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, finalV
     
     id = sourceids.split("%2F")
     currentDateTime = datetime.now()
-    created = currentDateTime.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    created = currentDateTime.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
 
     final = {
             "wattHours" : finalValue
@@ -34,7 +34,7 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, finalV
         "cause": f"{cause}",
         "final": final,
         "start": start,
-        "userId" f"{userid}",
+        "userId": f"{userid}",
         "created": f"{created}",
         "endDate": f"{eventDate}",
         "localtion": location,
