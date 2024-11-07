@@ -1,6 +1,7 @@
 import argparse
 from solarnetwork_python.client import Client
 import sys
+import datetime
 
 def list_expire_jobs(token, secret):
     client = Client(token, secret)
@@ -19,7 +20,6 @@ def list_expire_jobs(token, secret):
 def list_import_jobs(token, secret):
     client = Client(token, secret)
     response = client.listimportjobs()
-
     print("Job_ID,Job_State,Done,Cancelled,Name")
     for element in response:
         name = element['configuration']['inputConfiguration']['name'].replace(" ", "_")
@@ -27,7 +27,9 @@ def list_import_jobs(token, secret):
         jobstate = element.get('jobState', 'N/A')
         done = element.get('done', 'N/A')
         cancelled = element.get('cancelled', 'N/A')
-        print(jobid, jobstate, done, cancelled, name, sep=",")
+        importdate = element.get('importDate', 'N/A')
+        message = element.get('message', 'N/A')
+        print(datetime.datetime.fromtimestamp(importdate/1000).strftime('%c'), jobid, jobstate, done, cancelled, name, message, sep=",")
 
 def manage_import_jobs(action, token, secret, jobid):
     client = Client(token, secret)
