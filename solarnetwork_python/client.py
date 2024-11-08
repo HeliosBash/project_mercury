@@ -1,7 +1,7 @@
 from datetime import datetime
 import requests
 import json
-
+import base64
 from solarnetwork_python.authentication import generate_auth_header, get_x_sn_date
 
 
@@ -260,7 +260,6 @@ class Client:
         v = resp.json()
         return v
 
-
     def import_data(self, description, importdata ):
         # The time has to be in UTC
         now = datetime.utcnow()
@@ -309,6 +308,57 @@ class Client:
 
         return v["data"]
 
+    def import_compressed_data(self, description, importdata ):
+        # The time has to be in UTC
+        now = datetime.utcnow()
+        date = get_x_sn_date(now)
+        path = "/solaruser/api/v1/sec/user/import/jobs"
+
+        # These should be present for all API calls
+        headers = {"content-type": "multipart/form-data; charset=utf-8; boundary=__X_PAW_BOUNDARY__", "host": "data.solarnetwork.net", "x-sn-date": date}
+
+        description_data = json.dumps(description)
+        
+        importdata_base64 = base64.b64encode(importdata).decode('latin-1')
+
+        body = (
+            f'--__X_PAW_BOUNDARY__\r\n'
+            f'Content-Disposition: form-data; name="config"\r\n'
+            f'Content-Type: application/json\r\n'
+            f'\r\n'
+            f'{description_data}\r\n'
+            f'--__X_PAW_BOUNDARY__\r\n'
+            f'Content-Disposition: form-data; name="data"; filename="data.csv.xz"\r\n'
+            f'Content-Type: application/octet-stream\r\n'
+            f'Content-Transfer-Encoding: base64\r\n'
+            f'\r\n'
+            f'{importdata_base64}\r\n'
+            f'--__X_PAW_BOUNDARY__--\r\n'
+        )
+
+        auth = generate_auth_header(
+            self.token, self.secret, "POST", path, "", headers, body, now
+        )
+
+        resp = requests.post(
+            url="https://data.solarnetwork.net/solaruser/api/v1/sec/user/import/jobs",
+            data=body,
+
+            # Make sure to actually include the headers given by the previous
+            # headers argument
+            headers={
+                "Content-Type": "multipart/form-data; charset=utf-8; boundary=__X_PAW_BOUNDARY__",
+                "host": "data.solarnetwork.net",
+                "x-sn-date": date,
+                "Authorization": auth,
+            },
+        )
+        v = resp.json()
+        if v["success"] != True:
+            raise Exception("Unsuccessful API call")
+
+        return v["data"]
+
 
     def store_auxiliary(self, auxiliarydata):
         # The time has to be in UTC
@@ -319,7 +369,8 @@ class Client:
         # These should be present for all API calls
         headers = {"content-type": "application/json; charset=UTF-8", "host": "data.solarnetwork.net", "x-sn-date": date}
 
-        body = json.dumps(auxiliarydata)
+        #auxiliary_data = json.dumps(auxiliarydata)
+        body = ( f'{auxiliarydata}' )
 
         auth = generate_auth_header(
             self.token, self.secret, "POST", path, "", headers, body, now
@@ -339,8 +390,9 @@ class Client:
             },
         )
         v = resp.json()
-        if v["success"] != True:
-            raise Exception("Unsuccessful API call")
+        return v
+        #if v["success"] != True:
+        #    raise Exception("Unsuccessful API call")
 
-        return v["data"]
+        #return v["data"]
 
