@@ -401,189 +401,186 @@ else
 			echo "python3 solcast_download.py $lat $long $solcast_start $solcast_end $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 		fi
 
-			while true
-                	do
-                       		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to proceed to download solcast (Y/N)?" 2>&1 | tee -a $log_path
-                        	read solcast_continue_result < /dev/tty
+		while true
+                do
+                       	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to proceed to download solcast (Y/N)?" 2>&1 | tee -a $log_path
+                        read solcast_continue_result < /dev/tty
 
-                                if [[ "${solcast_continue_result^^}" == "Y" || "${solcast_continue_result^^}" == "N" ]] ; then
+                        if [[ "${solcast_continue_result^^}" == "Y" || "${solcast_continue_result^^}" == "N" ]] ; then
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $solcast_continue_result" 2>&1 | tee -a $log_path
+                                break;
+                        fi
+                done
+		
+		if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
 
-                                   echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $solcast_continue_result" 2>&1 | tee -a $log_path
-                                   break;
-                                fi
-                        done
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+			sleep 10
+			/bin/bash $solcast_script_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Process 5 Completed" | tee -a $log_path
+		else
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Solcast Data was not downloaded. Process 5 Completed" | tee -a $log_path
+		fi
 
-
-                        if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
-
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-				sleep 10
-				/bin/bash $solcast_script_path
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Process 5 Completed" | tee -a $log_path
-			else
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Solcast Data was not downloaded. Process 5 Completed" | tee -a $log_path
-			fi
-
-			echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
-                	echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
 
 
-			startperiod=$(echo $new_start_gap | sed "s/T/ /g;s/%3A/:/g")
-			endperiod=$(echo $new_end_gap | sed "s/T/ /g;s/%3A/:/g")
-			runtime=$(date +"%Y%m%d_%H%M%S")
-			startperiodepoch=$(date -d "$startperiod" +%s)
-			endperiodepoch=$(date -d "$endperiod" +%s)
-			a=0
+		startperiod=$(echo $new_start_gap | sed "s/T/ /g;s/%3A/:/g")
+		endperiod=$(echo $new_end_gap | sed "s/T/ /g;s/%3A/:/g")
+		runtime=$(date +"%Y%m%d_%H%M%S")
+		startperiodepoch=$(date -d "$startperiod" +%s)
+		endperiodepoch=$(date -d "$endperiod" +%s)
+		a=0
 
-			irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
-			electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
-			ghitotal=0
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Trimming File for periods between $startperiod and $endperiod" | tee -a $log_path
-			tail -n +2 $solcast_csv_path | while IFS=, read periodend periodstart period ghi
-			do
+		irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
+		electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
+		ghitotal=0
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Trimming File for periods between $startperiod and $endperiod" | tee -a $log_path
+		tail -n +2 $solcast_csv_path | while IFS=, read periodend periodstart period ghi
+		do
 
-        			rowdate=$(date -d "$periodstart" +%s)
-        			if [[ $rowdate -gt $startperiodepoch && $rowdate -lt $endperiodepoch ]] ; then
-                			echo "$periodend,$periodstart,$period,$ghi" >> data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
-        			fi
-			done
+        		rowdate=$(date -d "$periodstart" +%s)
+        		if [[ $rowdate -gt $startperiodepoch && $rowdate -lt $endperiodepoch ]] ; then
+                		echo "$periodend,$periodstart,$period,$ghi" >> data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
+        		fi
+		done
 
-			startdate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | head -n 1 | cut -d , -f 2)
-			enddate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | tail -n 1 | cut -d , -f 2)
+		startdate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | head -n 1 | cut -d , -f 2)
+		enddate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | tail -n 1 | cut -d , -f 2)
 
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from $startdate to $enddate" | tee -a $log_path
-			while IFS=, read periodend periodstart period ghi
-			do
-       				ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
-        			if [[ $a = 0 ]] ; then
-            				e2=$ghi
-            				echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
-            				echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
-            				a=1
-            				ghitotal=$((ghi+ghitotal))
-            				echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
-        			else
-            				d312=$(echo "scale=8; $ghi/12" | bc )
-					if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
-                                             nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.8f", $0}' )
- 	                                else
-                                             nir=$(echo "$e2 + $d312" | bc  )
-                                        fi
-            				e2=$nir
-            				ghitotal=$((ghi+ghitotal))
-            				echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
-           				echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
-        			fi
-
-			done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
-
-        		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal"
-			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Enter Total Enery in KWH: " 
-        		read total_energy < /dev/tty
-			#eesourceids=$sourceids
-			prevenergyinwatthours=0
-
-        		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" | tee -a $log_path
-
-			echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
-        		while IFS=, read ddt irr irh
-        		do
-                		ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc )
-                		energy=$(echo "scale=8 ; $total_energy * $ghiratio * 12" | bc )
-                		energyinwatts=$(echo "scale=8 ; $energy * 1000" | bc )
-                		watthours=$(echo "scale=8 ; $energyinwatts / 12" | bc )
-				totalwatthours=$(echo "scale=8 ; $prevenergyinwatthours + $watthours" | bc )
-                		prevenergyinwatthours=$totalwatthours
-				# >data/review_ee_computation
-				# echo "$ddt,$irr,$ghitotal,$ghiratio,$total_energy,$energyinwatts,$totalwatthours" >> data/review_ee_computation
-                		echo "$node,$sid,$ddt,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
-        		done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
-
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" | tee -a $log_path
-                        head -n 5 $electrical_energy_data_path
-                        echo "....."
-                        tail -n 5 $electrical_energy_data_path
-
-        		snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
-                        snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
-                        inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
-                        inner_end_gap_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_gap_watthours" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_gap_watthours" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_gap_watthours" | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_gap_watthours" | tee -a $log_path
-
-			
-			
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file $electrical_energy_data_path" | tee -a $log_path
-        		dos2unix  $electrical_energy_data_path
-        		sleep 1
-        		xz -k $electrical_energy_data_path
-			
-			echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 7*************" 2>&1 | tee -a $log_path
-                       	echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" 2>&1 | tee -a $log_path
-        		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
-			filesizebytes=$(ls -l $electrical_energy_data_path | awk '{print $5}')	
-			filsesizemb=$(($filesizebytes/1048576))
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from $startdate to $enddate" | tee -a $log_path
+		while IFS=, read periodend periodstart period ghi
+		do
+       			ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
+        		if [[ $a = 0 ]] ; then
+            			e2=$ghi
+            			echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
+            			echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
+            			a=1
+            			ghitotal=$((ghi+ghitotal))
+            			echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+        		else
+            			d312=$(echo "scale=8; $ghi/12" | bc )
+				if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
+					nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.8f", $0}' )
+				else
+					nir=$(echo "$e2 + $d312" | bc  )
+				fi
 				
-			if [ $filsesizemb -lt 20 ] ; then
+				e2=$nir
+            			ghitotal=$((ghi+ghitotal))
+            			echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+           			echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
+        		fi
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
+		done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $electrical_energy_data_path --token $token --secret $secret"
-				while true
-                        	do
-                        		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
-                                	read continue_result < /dev/tty
+        	echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal"
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Enter Total Enery in KWH: " 
+        	read total_energy < /dev/tty
+		#eesourceids=$sourceids
+		prevenergyinwatthours=0
 
-                                		if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
-                                   		echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
-                                   		break;
-                                		fi
-                        		done
+        	echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" | tee -a $log_path
 
-                        		if [[ "${continue_result^^}" == "Y" ]] ; then
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-                                		sleep 5
+		echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
+        	while IFS=, read ddt irr irh
+        	do
+                	ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc )
+                	energy=$(echo "scale=8 ; $total_energy * $ghiratio * 12" | bc )
+                	energyinwatts=$(echo "scale=8 ; $energy * 1000" | bc )
+                	watthours=$(echo "scale=8 ; $energyinwatts / 12" | bc )
+			totalwatthours=$(echo "scale=8 ; $prevenergyinwatthours + $watthours" | bc )
+               		prevenergyinwatthours=$totalwatthours	
+			# >data/review_ee_computation
+			# echo "$ddt,$irr,$ghitotal,$ghiratio,$total_energy,$energyinwatts,$totalwatthours" >> data/review_ee_computation
+			echo "$node,$sid,$ddt,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
+		done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" | tee -a $log_path
+		head -n 5 $electrical_energy_data_path | tee -a $log_path
+		echo "....." | tee -a $log_path
+		tail -n 5 $electrical_energy_data_path | tee -a $log_path
+
+        	snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+                snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+                inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
+                inner_end_gap_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_gap_watthours" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_gap_watthours" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_gap_watthours" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_gap_watthours" | tee -a $log_path
+
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file $electrical_energy_data_path" | tee -a $log_path
+		dos2unix  $electrical_energy_data_path
+		sleep 1
+		xz -k $electrical_energy_data_path
+
+		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 7*************" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
+		filesizebytes=$(ls -l $electrical_energy_data_path | awk '{print $5}')	
+		filsesizemb=$(($filesizebytes/1048576))
+				
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
+		if [ $filsesizemb -lt 20 ] ; then
+			compress="disabled"
+		else
+                      	irradiance_data_path="${irradiance_data_path}.xz"
+                        compress="enabled"
+                fi
+
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $electrical_energy_data_path --token $token --secret $secret" | tee -a $log_path
+		while true
+                do
+                        echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
+                        read continue_result < /dev/tty
+
+                        if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
+                               echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                               break;
+                        fi
+                done
+
+                if [[ "${continue_result^^}" == "Y" ]] ; then
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+                        sleep 5
 					
-						jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $electrical_energy_data_path --token $token --secret $secret)
-                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data"
-				                python3 solnet_manage_jobs.py import preview $token $secret $jobid
-                     				echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
-                     				while true
-                     				do
-                        				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: "
-                        				read confirm_result < /dev/tty
+			jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $electrical_energy_data_path --token $token --secret $secret)
+                     	echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" | tee -a $log_path
+			python3 solnet_manage_jobs.py import preview $token $secret $jobid
+                     	echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid" | tee -a $log_path
+                        while true
+                     	do
+                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: "
+                        	read confirm_result < /dev/tty
 
-                        				if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                				echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
-                        					break;
-                        					fi
-                     				done
-                     				if [[ "${confirm_result^^}" == "Y" ]] ; then
-                             				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
-                             				python3 solnet_manage_jobs.py import confirm $token $secret $jobid
-                     				else
-                             				echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted"
-                     				fi
-					else
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Aborted" 2>&1 | tee -a $log_path
-					fi
-			else
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
-                                echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process 7 Aborted. "
-
-			fi 
+                        	if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
+                        		break;
+                        	fi
+                     	done
+                     		
+			if [[ "${confirm_result^^}" == "Y" ]] ; then
+                             	echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid" | tee -a $log_path
+                             	python3 solnet_manage_jobs.py import confirm $token $secret $jobid | tee -a $log_path
+                     	else
+                             	echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted" | tee -a $log_path
+                     	fi
+		else
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Aborted" 2>&1 | tee -a $log_path
+		fi
 
 
 	fi

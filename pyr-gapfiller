@@ -554,56 +554,55 @@ else
         		        echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
 			        filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')	
 				filsesizemb=$(($filesizebytes/1048576))
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
 				
 				if [ $filsesizemb -lt 20 ] ; then
+                                	compress="disabled"
+                        	else
+                                	irradiance_data_path="${irradiance_data_path}.xz"
+                                	compress="enabled"
+                        	fi
 
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $irradiance_data_path --token $token --secret $secret" | tee -a $log_path
+				while true
+                        	do
+                        		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
+                                	read continue_result < /dev/tty
 
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret"
-					while true
-                        		do
-                        			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
-                                		read continue_result < /dev/tty
-
-                                		if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
+                                	if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
                                    		echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
                                    		break;
-                                		fi
-                        		done
+                                	fi
+                        	done
 
-                        		if [[ "${continue_result^^}" == "Y" ]] ; then
+                        	if [[ "${continue_result^^}" == "Y" ]] ; then
 				
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-                                		sleep 10
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+                                	sleep 10
 					
-						jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret)
-						echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data"
-                     				python3 solnet_manage_jobs.py import preview $token $secret $jobid
-						echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
-						while true
-			                        do
-                        				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]:"
-                        				read confirm_result < /dev/tty
+					jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $irradiance_data_path --token $token --secret $secret)
+					echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" | tee -a $log_path
+                     			python3 solnet_manage_jobs.py import preview $token $secret $jobid | tee -a $log_path
+					echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid" | tee -a $log_path
+					while true
+					do
+                        			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]:"
+                        			read confirm_result < /dev/tty
 
-                        				if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                				echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
-                        					break;
-                        				fi
-						done
-						if [[ "${confirm_result^^}" == "Y" ]] ; then
-			                        	echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid"
-                        				python3 solnet_manage_jobs.py import confirm $token $secret $jobid
-                     				else
-                             				echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted"
-                     				fi
-					else
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Completed" 2>&1 | tee -a $log_path
-					fi
+                        			if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
+                                			echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
+                        				break;
+                        			fi
+					done
+					if [[ "${confirm_result^^}" == "Y" ]] ; then
+						echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid" | tee -a $log_path
+                        			python3 solnet_manage_jobs.py import confirm $token $secret $jobid | tee -a $log_path
+                     			else
+                             			echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted" | tee -a $log_path
+                     			fi
 				else
-					 echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
-                                         echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process 7 Aborted. "
-
-				fi 
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Completed" 2>&1 | tee -a $log_path
+				fi
 			else
                                 echo "$(date +'%Y-%m-%d %H:%M:%S') Process 6 Completed" | tee -a $log_path
                                 echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Aborted" | tee -a $log_path
