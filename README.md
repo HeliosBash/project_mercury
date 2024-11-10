@@ -135,12 +135,12 @@
 		
 - [ ] Usage:		
 	```
-	solnet_import.py --node [nodeid] --sourceids [sourceids] --timezone [must be set to UTC] --filepath [path of csv file with PYR or EE data] --token [solnet token] -secret [solnet secret]
+	solnet_import.py --node [nodeid] --sourceids [sourceids] --timezone [must be set to UTC] --compression [ enabled or disabled ] --filepath [path of csv file with PYR or EE data] --token [solnet token] -secret [solnet secret]
 	```		
 
 - [ ] Example: 	
 	```
-	python3 solnet_import.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --timezone UTC --filepath data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv --token ABCD1234 --secret WXYZ7890
+	python3 solnet_import.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --timezone UTC --compression disabled --filepath data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv --token ABCD1234 --secret WXYZ7890
 	```
 
 ## Solcast Download
