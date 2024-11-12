@@ -155,16 +155,17 @@ else
                         echo "python3 solcast_download.py $lat $long $startdate $enddate $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 		fi
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" 2>&1 | tee -a $log_path
 		sleep 5
 		/bin/bash $solcast_script_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Process Completed" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Process Completed" 2>&1 | tee -a $log_path
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
 		
 		runtime=$(date +"%Y%m%d_%H%M%S")
 		irradiance_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_PYRGAP_SolNetIMport_${runtime}.csv"
 		a=0
+		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
 		while IFS=, read periodend periodstart period ghi
 		do
@@ -186,15 +187,15 @@ else
              		fi
 		done < $solcast_csv_path
 	
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $irradiance_data_path" | tee -a $log_path
-        	head -n 5 $irradiance_data_path
-        	echo "....."
-        	tail -n 5 $irradiance_data_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file $irradiance_data_path" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $irradiance_data_path" 2>&1 | tee -a $log_path
+        	head -n 5 $irradiance_data_path 2>&1 | tee -a $log_path
+        	echo "....." 2>&1 | tee -a $log_path
+        	tail -n 5 $irradiance_data_path 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Compressing output file $irradiance_data_path" 2>&1 | tee -a $log_path
        		dos2unix $irradiance_data_path
         	sleep 1
         	xz -k $irradiance_data_path
-        	echo "$(date +'%Y-%m-%d %H:%M:%S') Process completed" | tee -a $log_path
+        	echo "$(date +'%Y-%m-%d %H:%M:%S') Process completed" 2>&1 | tee -a $log_path
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for import" 2>&1 | tee -a $log_path
         	echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path
@@ -244,52 +245,54 @@ else
 		inner_start_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
                 inner_end_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Fill for PYR" | tee -a $log_path
-                echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
-                echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
-                echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
-               	echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_irradiancehours" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_irradiancehours" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Fill for PYR" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_irradiancehours" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Fill for PYR" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" 2>&1 | tee -a $log_path
+               	echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_irradiancehours" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_irradiancehours" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Fill for PYR" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_irradiancehours" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" 2>&1 | tee -a $log_path
 
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
 		if [ $filsesizemb -lt 20 ] ; then
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret" | tee -a $log_path
+		        compress="enabled"
+                        irradiance_data_path="${irradiance_data_path}.xz"
+                else
+                        irradiance_data_path="${irradiance_data_path}.xz"
+                        compress="enabled"
+                fi
 
-		     	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-                     	sleep 5
-		     	jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret)
-		     	echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" | tee -a $log_path
-		     	python3 solnet_manage_jobs.py import preview $token $secret $jobid
-		     	echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid" | tee -a $log_path
-		     	while true
-                     	do
-                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: " | tee -a $log_path
-                        	read confirm_result < /dev/tty
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $irradiance_data_path --token $token --secret $secret in 5 seconds. Hit Ctrl + C to Cancel" 2>&1 | tee -a $log_path
+                sleep 5
+		jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $irradiance_data_path --token $token --secret $secret)
+		echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" 2>&1 | tee -a $log_path
+		python3 solnet_manage_jobs.py import preview $token $secret $jobid  2>&1 | tee -a $log_path
+		echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid" 2>&1 | tee -a $log_path
+		while true
+                do
+                	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: " 2>&1 | tee -a $log_path
+                       	read confirm_result < /dev/tty
 
-                        	if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
-                        		break;
-                        	fi
-                     	done
+                        if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" 2>&1 | tee -a $log_path
+                        	break;
+                        fi
+                done
                      
-			if [[ "${confirm_result^^}" == "Y" ]] ; then
-				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-			     	sleep 10
-				python3 solnet_manage_jobs.py import confirm $token $secret $jobid
-		     	else
-			     	echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted" | tee -a $log_path
-		     	fi
-             	else
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
-                  	echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Process Aborted. " | tee -a $log_path
-	     	fi
+		if [[ "${confirm_result^^}" == "Y" ]] ; then
+			echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel" 2>&1 | tee -a $log_path
+			sleep 10
+			python3 solnet_manage_jobs.py import confirm $token $secret $jobid 2>&1 | tee -a $log_path
+		else
+			python3 solnet_manage_jobs.py import delete $token $secret $jobid 2>&1 | tee -a $log_path
+			echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted" 2>&1 | tee -a $log_path
+		fi
 	fi
 fi
