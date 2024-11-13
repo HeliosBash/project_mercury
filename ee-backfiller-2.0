@@ -471,8 +471,7 @@ else
 	
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path		
 		if [ $filsesizemb -lt 20 ] ; then
-			compress="enabled"
-			electrical_energy_data_path="${electrical_energy_data_path}.xz"
+			compress="disabled"
                 else
                         electrical_energy_data_path="${electrical_energy_data_path}.xz"
                         compress="enabled"
@@ -500,7 +499,7 @@ else
 
 			if [ $gap_count -gt 0 ]; then
 
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${new_start_gap}_${new_end_gap}_datum_gap " 2>&1 | tee -a $log_path
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${new_start_gap}_${new_end_gap}_datum_gap will be deleted first" 2>&1 | tee -a $log_path
                         	cat data/${node}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret to validate count of datum in gap" 2>&1 | tee -a $log_path
 
@@ -534,6 +533,7 @@ else
 				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds.  Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
                                 sleep 10
 				python3 solnet_manage_jobs.py import confirm $token $secret $jobid 2>&1 | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " 2>&1 | tee -a $log_path
 			fi
 			
 		

@@ -197,11 +197,6 @@ else
         	xz -k $irradiance_data_path
         	echo "$(date +'%Y-%m-%d %H:%M:%S') Process completed" 2>&1 | tee -a $log_path
 		
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for import" 2>&1 | tee -a $log_path
-        	echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path
-        	filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')
-        	filsesizemb=$(($filesizebytes/1048576))
-
         	echo "$(date +'%Y-%m-%d %H:%M:%S') Determining Stitch Parameters" 2>&1 | tee -a $log_path
 		before_startdate=$(date --date "$utcstartdate - 1 days"  +'%Y-%m-%d %H:%M:%SZ'  | sed 's/ /T/g;s/:/%3A/g')
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $before_startdate --enddate $startdate --aggregate None --maxoutput $maxoutput --token $token --secret $secret to determine SN EVENT 1" 2>&1 | tee -a $log_path
@@ -260,10 +255,14 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_irradiancehours" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" 2>&1 | tee -a $log_path
 
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for import" 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path
+                filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')
+                filsesizemb=$(($filesizebytes/1048576))
+
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
 		if [ $filsesizemb -lt 20 ] ; then
-		        compress="enabled"
-                        irradiance_data_path="${irradiance_data_path}.xz"
+		        compress="disabled"
                 else
                         irradiance_data_path="${irradiance_data_path}.xz"
                         compress="enabled"

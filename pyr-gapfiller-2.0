@@ -343,28 +343,11 @@ else
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_days/60/60/24)) " 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
-		python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
-		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
+		python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap
+		gap_count=$(sed '1d'  data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
+		cat data/${node}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
 		
-		if [ $gap_count -gt 0 ]; then
-
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap " 2>&1 | tee -a $log_path
-			cat data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap 2>&1 | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret to validate count of datum in gap" 2>&1 | tee -a $log_path
-			
-			result_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
-                	echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path		
-			if [ $result_count -ne $gap_count ] ; then
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Count doesn't match, adjust date and delete manually" 2>&1 | tee -a $log_path
-                        else
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of datum in gap." | tee -a $log_path
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Command python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret will be executed. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
-                        fi
-
-		fi
-#########REMOVED CONFIRMATION
-
 		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 5*************" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Preparing Solcast Query Data" 2>&1 | tee -a $log_path
 
@@ -490,62 +473,80 @@ else
   		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
 		filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')	
 		filsesizemb=$(($filesizebytes/1048576))
-		if [ $filsesizemb -lt 20 ] ; then
 
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret" 2>&1 | tee -a $log_path
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 5 seconds. Hit Ctrl + C to Cancel" 2>&1 | tee -a $log_path
-                        sleep 5
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
+                if [ $filsesizemb -lt 20 ] ; then
+                        compress="disabled"
+                else
+                        irradiance_data_path="${irradiance_data_path}.xz"
+                        compress="enabled"
+                fi
+
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret in 5 seconds.  Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
+                sleep 5
 					
-			jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret)
-			echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" 2>&1 | tee -a $log_path
-                     	python3 solnet_manage_jobs.py import preview $token $secret $jobid
+		jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret)
+		echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" 2>&1 | tee -a $log_path
+                python3 solnet_manage_jobs.py import preview $token $secret $jobid 
 			
-			echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py import confirm $token $secret $jobid will be executed" 2>&1 | tee -a $log_path
-			echo  "$(date +'%Y-%m-%d %H:%M:%S') Also, python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret in 10 seconds will be executed to clear datum in the gap." 2>&1 | tee -a $log_path
-			echo  "$(date +'%Y-%m-%d %H:%M:%S') If you won't proceed with the process, staged import will be deleted with python3 solnet_manage_jobs.py import delete $token $secret $jobid" 2>&1 | tee -a $log_path
-			while true
-			do
-                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]:" 2>&1 | tee -a $log_path
-                        	read confirm_result < /dev/tty
+		echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py import confirm $token $secret $jobid will be executed" 2>&1 | tee -a $log_path
+		while true
+		do
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]:" 2>&1 | tee -a $log_path
+			read confirm_result < /dev/tty
 
-                        	if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" 2>&1 | tee -a $log_path
-                        		break;
-                        	fi
-			done
+			if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" 2>&1 | tee -a $log_path
+                        	break;
+                        fi
+		done
 
-			if [[ "${confirm_result^^}" == "Y" ]] ; then
-				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
-				sleep 10
-				python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret
-				
-				echo  "$(date +'%Y-%m-%d %H:%M:%S') Please wait for a few minutes for the datum expire command to take effect" 2>&1 | tee -a $log_path
-				sleep 60
+		if [[ "${confirm_result^^}" == "Y" ]] ; then
 
-				check_expire_datum_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
-				while [ $check_expire_datum_count -gt 0 ]
-                                do
-                                	check_expire_datum_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
-					sleep 60
-				done
-	
+			if [ $gap_count -gt 0 ]; then
 
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap will be deleted first" 2>&1 | tee -a $log_path
+                        	cat data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret to validate count of datum in gap" 2>&1 | tee -a $log_path
+
+                        	result_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path
+                        	if [ $result_count -ne $gap_count ] ; then
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Count doesn't match, adjust date and delete manually" 2>&1 | tee -a $log_path
+                        	else
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of datum in gap." | tee -a $log_path
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret will be executed in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+                        		sleep 10
+                       	 		python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret
+					
+					echo  "$(date +'%Y-%m-%d %H:%M:%S') Please wait for a few minutes for the datum expire command to take effect" 2>&1 | tee -a $log_path
+                        		sleep 60
+					check_expire_datum_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
+					while [ $check_expire_datum_count -gt 0 ]
+ 		        	        do
+                	                	check_expire_datum_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
+                                		sleep 60
+                        		done
+					echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
+                        		sleep 10
+                        		python3 solnet_manage_jobs.py import confirm $token $secret $jobid  2>&1 | tee -a $log_path
+
+                        		echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " 2>&1 | tee -a $log_path
+
+				fi
+			else
 				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
 				sleep 10
-				python3 solnet_manage_jobs.py import confirm $token $secret $jobid
-                     		
+				python3 solnet_manage_jobs.py import confirm $token $secret $jobid 2>&1 | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " 2>&1 | tee -a $log_path
+	                fi
 
-			else
-                        	echo  "$(date +'%Y-%m-%d %H:%M:%S') Deleting Staged Data with python3 solnet_manage_jobs.py import delete $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
-				python3 solnet_manage_jobs.py import delete $token $secret $jobid
-                     	fi
+				
 		else
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Exceeded 20 MB limit. Import Process Aborted. " 2>&1 | tee -a $log_path
-
-		fi 
+                        echo  "$(date +'%Y-%m-%d %H:%M:%S') Deleting Staged Data with python3 solnet_manage_jobs.py import delete $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
+			sleep 10
+			python3 solnet_manage_jobs.py import delete $token $secret $jobid  2>&1 | tee -a $log_path
+                fi
 
 
 	fi
