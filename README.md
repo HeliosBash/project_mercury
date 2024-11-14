@@ -6,12 +6,12 @@
 
 - [ ] Usage:		
 	```
-	pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATE] --enddate|-e [END DATE] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+	pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATETIME in "YYYY-MM-DD HH:MM"] --enddatetime|-e [END DATETIME in "YYYY-MM-DD HH:MM"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
 	```
 
 - [ ] Example: 	
 	```
-	/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate 2021-08-31 --enddate 2021-09-03 --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
+	/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate "2021-08-31 00:00" --enddate "2021-09-03 00:00" --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
 	```
 ## PYR FILLER
 
@@ -19,7 +19,7 @@
 
 - [ ] Usage:		
 	```
-	pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME] --enddatetime|-e [END DATETIME] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+	pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in "YYYY-MM-DD HH:MM"] --enddatetime|-e [END DATETIME in "YYYY-MM-DD HH:MM"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
 	```		
 
 - [ ] Example:        
