@@ -440,9 +440,9 @@ else
 		done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $irradiance_data_path" | tee -a $log_path
-                head -n 5 $irradiance_data_path
-                echo "....."
-		tail -n 5 $irradiance_data_path
+                head -n 5 $irradiance_data_path | tee -a $log_path
+                echo "....." | tee -a $log_path
+		tail -n 5 $irradiance_data_path | tee -a $log_path
 		snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
 		snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
 		inner_start_gap_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
@@ -487,7 +487,7 @@ else
 					
 		jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --filepath $irradiance_data_path --token $token --secret $secret)
 		echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" 2>&1 | tee -a $log_path
-                python3 solnet_manage_jobs.py import preview $token $secret $jobid 
+                python3 solnet_manage_jobs.py import preview $token $secret $jobid 2>&1 | tee -a $log_path
 			
 		echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py import confirm $token $secret $jobid will be executed" 2>&1 | tee -a $log_path
 		while true
@@ -517,7 +517,7 @@ else
                                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of datum in gap." | tee -a $log_path
                                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret will be executed in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
                         		sleep 10
-                       	 		python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret
+                       	 		python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret 2>&1 | tee -a $log_path
 					
 					echo  "$(date +'%Y-%m-%d %H:%M:%S') Please wait for a few minutes for the datum expire command to take effect" 2>&1 | tee -a $log_path
                         		sleep 60
@@ -527,6 +527,7 @@ else
                 	                	check_expire_datum_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
                                 		sleep 60
                         		done
+
 					echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
                         		sleep 10
                         		python3 solnet_manage_jobs.py import confirm $token $secret $jobid  2>&1 | tee -a $log_path

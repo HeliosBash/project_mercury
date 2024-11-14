@@ -559,7 +559,7 @@ else
 					
 			jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $electrical_energy_data_path --token $token --secret $secret)
                      	echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" | tee -a $log_path
-			python3 solnet_manage_jobs.py import preview $token $secret $jobid
+			python3 solnet_manage_jobs.py import preview $token $secret $jobid 2>&1 | tee -a $log_path
                      	echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, execute python3 solnet_manage_jobs.py import confirm $token $secret $jobid" | tee -a $log_path
                         while true
                      	do
@@ -574,7 +574,7 @@ else
                      		
 			if [[ "${confirm_result^^}" == "Y" ]] ; then
                              	echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid" | tee -a $log_path
-                             	python3 solnet_manage_jobs.py import confirm $token $secret $jobid | tee -a $log_path
+                             	python3 solnet_manage_jobs.py import confirm $token $secret $jobid 2>&1 | tee -a $log_path
                      	else
                              	echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted" | tee -a $log_path
                      	fi
