@@ -43,7 +43,7 @@ while [ $# -gt 0 ] ; do
       secret="${1#*=}"
       ;;
     --help|-h)
-      printf "Usage: ee-backfiller-2.0 --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [ENDDATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [ENERGY SPIKE IN KWH] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
+      printf "Usage: ee-backfiller-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [ENDDATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [ENERGY SPIKE IN KWH] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
       exit 0
       ;;
     *)

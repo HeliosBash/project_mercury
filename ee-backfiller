@@ -537,7 +537,7 @@ else
 		if [ $filsesizemb -lt 20 ] ; then
 			compress="disabled"
 		else
-                      	irradiance_data_path="${irradiance_data_path}.xz"
+                      	electrical_energy_data_path="${electrical_energy_data_path}.xz"
                         compress="enabled"
                 fi
 

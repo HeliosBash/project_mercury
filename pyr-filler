@@ -43,7 +43,7 @@ while [ $# -gt 0 ] ; do
       secret="${1#*=}"
       ;;
     --help|-h)
-      printf "Usage: pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME] --enddatetime|-e [END DATETIME] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
+      printf "Usage: pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [END DATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
       exit 0
       ;;
     *)
@@ -56,10 +56,10 @@ done
 
 if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
 
-	printf "Error: The following arguments are required --node --sourceid --startdate --enddate --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
+	printf "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
 
 else
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-filler --node $node --sourceid $sid --timezone $timezone --localstartdate \"$localstartdate\" --enddate \"$localenddate\" --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-filler --node $node --sourceid $sid --timezone $timezone --startdatetime \"$startdatetime\" --enddatetime \"$enddatetime\" --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
 	log_path="logs/pyr-filler.log"
