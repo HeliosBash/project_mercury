@@ -538,7 +538,7 @@ else
 			
 		
 		else
-			echo  "$(date +'%Y-%m-%d %H:%M:%S') Deleting Staged Data with python3 solnet_manage_jobs.py import delete $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
+			echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. Deleting Staged Data. Executing python3 solnet_manage_jobs.py import delete $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
 			sleep 10
 			python3 solnet_manage_jobs.py import delete $token $secret $jobid 2>&1 | tee -a $log_path
 
