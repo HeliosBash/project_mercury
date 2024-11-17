@@ -6,21 +6,11 @@ import sys
 import re
 from datetime import datetime, timedelta
 
-#def date_validation(date_text):
-#   try:
-#      datetime.strptime(date_text, '%Y-%m-%d')
-#   except ValueError:
-#      print("Incorrect Date format , it should be YYYY-MM-DD")
-#      sys.exit(1)
-
 lat = sys.argv[1]
 long = sys.argv[2]
-start = sys.argv[3]
-end = sys.argv[4]
+startdate = sys.argv[3]
+enddate = sys.argv[4]
 solcasttoken = sys.argv[5]
-
-#date_validation(start)
-#date_validation(end)
 
 bearer = f"Bearer {solcasttoken}"
 headers = {
@@ -28,7 +18,9 @@ headers = {
    'Authorization': bearer
 }
 
-url = f"https://api.solcast.com.au/data/historic/radiation_and_weather?latitude={lat}&longitude={long}&period=PT5M&start={start}&end={end}&format=json&time_zone=utc&output_parameters=ghi"
+formatted_startdate=startdate.replace(" ","T").replace(":","%3A")
+formatted_enddate=enddate.replace(" ","T").replace(":","%3A")
+url = f"https://api.solcast.com.au/data/historic/radiation_and_weather?latitude={lat}&longitude={long}&period=PT5M&start={formatted_startdate}&end={formatted_enddate}&format=json&time_zone=utc&output_parameters=ghi"
 
 response = requests.get(url, headers=headers)
 

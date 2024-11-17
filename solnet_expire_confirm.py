@@ -4,8 +4,12 @@ import sys
 import argparse
 
 def solar_query(node, sourceids, startdate, enddate, token, secret):
-    """Query the Solar Network API and print the response."""
-    param_str = f"aggregationKey=0&localEndDate={enddate}&localStartDate={startdate}&nodeIds={node}&sourceIds={sourceids}"
+    
+    formatted_sourceids=sourceids.replace("/", "%2F")
+    formatted_startdate=startdate.replace(" ","T").replace(":","%3A")
+    formatted_enddate=enddate.replace(" ","T").replace(":","%3A")
+
+    param_str = f"aggregationKey=0&localEndDate={formatted_enddate}&localStartDate={formatted_startdate}&nodeIds={node}&sourceIds={formatted_sourceids}"
     client = Client(token, secret)
     
     try:
@@ -21,9 +25,9 @@ def main():
 
     # Add arguments 
     parser.add_argument("--node", required=True, type=str, help="Node ID (non-empty string)")
-    parser.add_argument("--sourceids", required=True, type=str, help="Source ID in format %2FVI%2FSU%2FB1%2FGEN%2F1")
-    parser.add_argument("--localstartdate", required=True, type=str, help="Local start date in format YYYY-MM-DDTHH%3AMM%3ASS")
-    parser.add_argument("--localenddate", required=True, type=str, help="Local end local date in format YYYY-MM-DDTHH%3AMM%3ASS")
+    parser.add_argument("--sourceids", required=True, type=str, help="Source ID in format /VI/SU/B1/GEN/1")
+    parser.add_argument("--localstartdate", required=True, type=str, help="Local start date in format 'YYYY-MM-DD HH:MM:SS'")
+    parser.add_argument("--localenddate", required=True, type=str, help="Local end local date in format 'YYYY-MM-DD HH:MM:SS'")
     parser.add_argument("--token", required=True, help="API token")
     parser.add_argument("--secret", required=True, help="API secret")
 

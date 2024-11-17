@@ -6,10 +6,14 @@ import argparse
 def solar_query(node, sourceids, startdate, enddate, aggregate, maxoutput, token, secret):
     client = Client(token, secret)
 
+    formatted_sourceids=sourceids.replace("/","%2F")
+    formatted_startdate=startdate.replace(" ","T").replace(":","%3A")
+    formatted_enddate=enddate.replace(" ","T").replace(":","%3A")
+
     if aggregate == "None":
-        param_str = f"localEndDate={enddate}&localStartDate={startdate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={sourceids}"
+        param_str = f"localEndDate={formatted_enddate}&localStartDate={formatted_startdate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={formatted_sourceids}"
     else:
-        param_str = f"aggregation={aggregate}&localEndDate={enddate}&localStartDate={startdate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={sourceids}"
+        param_str = f"aggregation={aggregate}&localEndDate={formatted_enddate}&localStartDate={formatted_startdate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={formatted_sourceids}"
 
     response = client.solarquery(param_str)
     if 'PYR' in sourceids:
@@ -68,9 +72,9 @@ def main():
     parser = argparse.ArgumentParser(description="Solar query!")
 
     parser.add_argument("--node", required=True, type=str, help="Node ID (non-empty string)")
-    parser.add_argument("--sourceids", required=True, type=str, help="Source ID in format %2FVI%2FSU%2FB1%2FGEN%2F1")
-    parser.add_argument("--localstartdate", required=True, type=str, help="Start date in format YYYY-MM-DDTHH%3AMM%3ASS")
-    parser.add_argument("--localenddate", required=True, type=str, help="End date in format YYYY-MM-DDTHH%3AMM%3ASS")
+    parser.add_argument("--sourceids", required=True, type=str, help="Source ID in format /VI/SU/B1/GEN/1")
+    parser.add_argument("--localstartdate", required=True, type=str, help="Start date in format 'YYYY-MM-DD HH:MM:SS'")
+    parser.add_argument("--localenddate", required=True, type=str, help="End date in format 'YYYY-MM-DD HH:MM:SS'")
     parser.add_argument("--aggregate", required=True, help="Aggregation method")
     parser.add_argument("--maxoutput", required=True, help="Maximum output limit")
     parser.add_argument("--token", required=True, help="API token")

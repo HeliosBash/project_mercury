@@ -5,6 +5,8 @@ import argparse
 def solnet_import(node, sourceids, timezone, compression, filepath, token, secret):
     """Import data from a specified node and data sources"""
     
+    formatted_sourceids=sourceids.replace("/", "%2F")
+
     client = Client(token, secret)
 
     service_properties = {
@@ -18,14 +20,14 @@ def solnet_import(node, sourceids, timezone, compression, filepath, token, secre
     }
 
     input_config = {
-        "name": f"{node}_{sourceids}_Input",
+        "name": f"{node}_{formatted_sourceids}_Input",
         "timeZoneId": timezone,
         "serviceIdentifier": "net.solarnetwork.central.datum.imp.standard.SimpleCsvDatumImportInputFormatService",
         "serviceProperties": service_properties
     }
     
     import_config = {
-        "name": f"{node}_{sourceids}_Import",
+        "name": f"{node}_{formatted_sourceids}_Import",
         "stage": True,
         "inputConfiguration": input_config
     }
@@ -53,7 +55,7 @@ def solnet_import(node, sourceids, timezone, compression, filepath, token, secre
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Import data into Solar Network.")
     parser.add_argument("--node", required=True, type=str, help="Node ID to import data from.")
-    parser.add_argument("--sourceids", required=True, type=str, help="Source ID in format %2FVI%2FSU%2FB1%2FGEN%2F1")
+    parser.add_argument("--sourceids", required=True, type=str, help="Source ID in format /VI/SU/B1/GEN/1")
     parser.add_argument("--timezone", required=True, type=str, help="Time zone for the data import.")
     parser.add_argument("--compression", required=True, type=str, help="Enable or disable compresion.")
     parser.add_argument("--filepath", required=True, type=str, help="Path to the CSV file containing data.")
