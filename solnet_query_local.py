@@ -77,8 +77,11 @@ def main():
     parser.add_argument("--secret", required=True, help="API secret")
 
     args = parser.parse_args()
-
-    solar_query(args.node, args.sourceids, args.localstartdate, args.localenddate, args.aggregate, args.maxoutput, args.token, args.secret)
+    
+    try:
+        solar_query(args.node, args.sourceids, args.localstartdate, args.localenddate, args.aggregate, args.maxoutput, args.token, args.secret)
+    except:
+        print ("Error: Unsuccesful API Call. Please make sure that the token and secret are valid and has access to query the node and source ID and check if the parameters are in the correct format")
 
 if __name__ == "__main__":
     main()

@@ -59,7 +59,6 @@ if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$e
 	printf "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
 
 else
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-filler --node $node --sourceid $sid --timezone $timezone --startdatetime \"$startdatetime\" --enddatetime \"$enddatetime\" --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
 	log_path="logs/pyr-filler.log"
@@ -105,12 +104,16 @@ else
 
 	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum
 
+	
 	datum_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum | wc -l)    
 
-	if [ $datum_count -gt 0 ]; then
+	if [[ "$(cat data/${node}_${sourceids}_${startdate}_${enddate}_datum)" == *"Error"* ]] ; then
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') " | tee -a $log_path 
+		cat data/${node}_${sourceids}_${startdate}_${enddate}_datum 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Usage: pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [END DATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" 2>&1 | tee -a $log_path 
+	elif [ $datum_count -gt 0 ]; then
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Aborting, datum present, adjust date range" 2>&1 | tee -a $log_path
-
 	else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" 2>&1 | tee -a $log_path
 	

@@ -10,8 +10,9 @@ def solar_query(node, sourceids, startdate, enddate, aggregate, maxoutput, token
         param_str = f"endDate={enddate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={sourceids}&startDate={startdate}"
     else:
         param_str = f"aggregation={aggregate}&endDate={enddate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={sourceids}&startDate={startdate}"
-
+    
     response = client.solarquery(param_str)
+
     if 'PYR' in sourceids:
         if aggregate == "None":
             print('Created,localDate,localTime,nodeId,sourceId,irradiance,irradianceHours')
@@ -77,8 +78,11 @@ def main():
     parser.add_argument("--secret", required=True, help="API secret")
 
     args = parser.parse_args()
-
-    solar_query(args.node, args.sourceids, args.startdate, args.enddate, args.aggregate, args.maxoutput, args.token, args.secret)
+    
+    try:   
+        solar_query(args.node, args.sourceids, args.startdate, args.enddate, args.aggregate, args.maxoutput, args.token, args.secret)
+    except:
+        print ("Error: Unsuccesful API Call. Please make sure that the token and secret are valid and has access to query the node and source ID and check if the parameters are in the correct format")
 
 if __name__ == "__main__":
     main()
