@@ -1,30 +1,37 @@
 # SOLNET AUTOMATION SCRIPTS
 
+## REQUIREMENTS
+
+- [ ] Solcast API Token from https://toolkit.solcast.com.au/
+- [ ] Solnet User Token and Secret that has sufficient access to the Node and Source ID
+- [ ] Site Latitude and Longitude Coordinates from Ecosuite
+- [ ] Site Local Timezone from Ecosuite
+
 ## PYR GAP FILLER
 
 - [ ] Identifies PYR gaps and fills the gap with irradiance data calculated from data downloaded from solcast.
 
 - [ ] Usage:		
 	```
-	pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATETIME in "YYYY-MM-DD HH:MM"] --enddatetime|-e [END DATETIME in "YYYY-MM-DD HH:MM"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+	pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [END DATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
 	```
 
 - [ ] Example: 	
 	```
-	/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate "2021-08-31 00:00" --enddate "2021-09-03 00:00" --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
+	/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate '2021-08-31 00:00' --enddate '2021-09-03 00:00' --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
 	```
 ## PYR FILLER
 
-- [ ] It has a similar process as the pyr gap filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data.
+- [ ] It has a similar process as the pyr gap filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data. Make sure to round up the date range to the nearest 5 minute interval. 
 
 - [ ] Usage:		
 	```
-	pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in "YYYY-MM-DD HH:MM"] --enddatetime|-e [END DATETIME in "YYYY-MM-DD HH:MM"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+	pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [END DATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
 	```		
 
 - [ ] Example:        
 	```
-	/bin/bash pyr-filler --node 350 --sourceid /PA/LO/S1/PYR/1 --timezone America/New_York --startdatetime 2024-07-16\ 20:00 --enddatetime 2024-07-31\ 23:59 --latitude 39.8712977 --longitude -75.6749004 --api solcasttoken --token solnettoken --secret solnetsecret
+	/bin/bash pyr-filler --node 350 --sourceid /PA/LO/S1/PYR/1 --timezone America/New_York --startdatetime '2024-07-16 20:00' --enddatetime '2024-07-31 23:59' --latitude 39.8712977 --longitude -75.6749004 --api solcasttoken --token solnettoken --secret solnetsecret
 	```
 
 ## ENERGY BACKFILLER
@@ -33,12 +40,12 @@
 
 - [ ] Usage:
 	```		
-	ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATETIME in "YYYY-MM-DD HH:MM"] --enddatetime|-e [ENDDATETIME in "YYYY-MM-DD HH:MM"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+	ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [ENDDATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
 	```
 
 - [ ] Example:	
 	```
-	/bin/bash ee-backfiller --node 372 --sourceid /G2/S2/S1/GEN/1 --startdatetime "2023-10-04 20:00" --enddatetime "2023-10-17 00:00" --latitude 29.658884 --longitude -82.334525 --api solcasttoken --token solnettoken --secret solnetsecret
+	/bin/bash ee-backfiller --node 372 --sourceid /G2/S2/S1/GEN/1 --startdatetime '2023-10-04 20:00' --enddatetime '2023-10-17 00:00' --latitude 29.658884 --longitude -82.334525 --api solcasttoken --token solnettoken --secret solnetsecret
 	```
 
 ## BAD DATA DELETER
@@ -79,12 +86,12 @@
 		
 - [ ] Usage:		
 	```
-	solnet_query.py --node [nodeid] --sourceids [sourceids] --startdate [UTC startdate] --enddate [UTC enddate] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
+	solnet_query.py --node [nodeid] --sourceids [sourceids] --startdate [UTC start datetime in 'YYYY-MM-DD HH:MM'] --enddate [UTC end datetime in 'YYYY-MM-DD HH:MM'] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
 	```
 		
 - [ ] Example:
 	```
-	python3 solnet_query.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --startdate 2024-05-01T00%3A00 --enddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
+	python3 solnet_query.py --node 372 --sourceids /G2/S2/S1/PYR/1 --startdate '2024-05-01 00:00' --enddate '2024-06-31 23:59' --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
 	```
 
 ### Solnet Query Local
@@ -93,12 +100,12 @@
                 
 - [ ] Usage:          
 	```
-	solnet_query_local.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local startdate] --localenddate [Local enddate] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
+	solnet_query_local.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate [Local end datetime in 'YYYY-MM-DD HH:MM'] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
 	```                
 
 - [ ] Example:        
 	```
-	python3 solnet_query_local.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-01T00%3A00 --localenddate 2024-06-31T23%3A59 --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
+	python3 solnet_query_local.py --node 372 --sourceids /G2/S2/S1/PYR/1 --localstartdate '2024-05-01 00:00' --localenddate '2024-06-31 23:59' --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
 	```
 
 ## Solnet Expire Datum - Preview
@@ -107,12 +114,12 @@
 		
 - [ ] Usage: 		
 	```
-	solnet_expire_preview.py --node [nodeid] --sourceids [sourceids] --localstartdate [LOCAL start date] --localenddate [LOCAL end date] --token [solnet token] --secret [solnet secret]
+	solnet_expire_preview.py --node [nodeid] --sourceids [sourceids] --localstartdate [LOCAL start datetime in 'YYYY-MM-DD HH:MM'] --localenddatetime [LOCAL end date in 'YYYY-MM-DD HH:MM'] --token [solnet token] --secret [solnet secret]
 	```
 
 - [ ] Example:	
 	```
-	python3 solnet_expire_preview.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-09T19%3A00%3A30 --localenddate 2024-06-10T20%3A59%3A30 --token ABCD1234 --secret WXYZ7890
+	python3 solnet_expire_preview.py --node 372 --sourceids /G2/S2/S1/PYR/1 --localstartdate '2024-05-09 19:00:30' --localenddate '2024-06-10 20:59:30' --token ABCD1234 --secret WXYZ7890
 	```
 
 ## Solnet Expire Datum - Confirm
@@ -121,12 +128,12 @@
 
 - [ ] Usage:          
 	```
-	solnet_expire_confirm.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local start date] --localenddate [LOCAL end date] --token [solnet token] --secret [solnet secret]
+	solnet_expire_confirm.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate [LOCAL end datetime in 'YYYY-MM-DD HH:MM'] --token [solnet token] --secret [solnet secret]
 	```		
 
 - [ ] Example:        
 	```
-	python3 solnet_expire_confirm.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --localstartdate 2024-05-09T19%3A00%3A30 --localenddate 2024-06-10T20%3A59%3A30 --token ABCD1234 --secret WXYZ7890
+	python3 solnet_expire_confirm.py --node 372 --sourceids /G2/S2/S1/PYR/1 --localstartdate '2024-05-09 19:00:30' --localenddate '2024-06-10 20:59:30' --token ABCD1234 --secret WXYZ7890
 	```
 	
 ## Solnet Import
@@ -140,7 +147,7 @@
 
 - [ ] Example: 	
 	```
-	python3 solnet_import.py --node 372 --sourceids %2FG2%2FS2%2FS1%2FPYR%2F1 --timezone UTC --compression disabled --filepath data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv --token ABCD1234 --secret WXYZ7890
+	python3 solnet_import.py --node 372 --sourceids /G2/S2/S1/PYR/1 --timezone UTC --compression disabled --filepath data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv --token ABCD1234 --secret WXYZ7890
 	```
 
 ## Solcast Download
@@ -149,12 +156,12 @@
 
 - [ ] 	Usage:
 	```
-	python3 solcast_download.py [latitude] [longitude] [UTC start date] [UTC end date] [solcast_api_token]
+	python3 solcast_download.py [latitude] [longitude] [UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] [UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] [solcast_api_token]
 	```
 
 - [ ] 	Example:	
 	```
-	python3 solcast_download.py 29.658884 -82.334525 2024-06-11T11%3A10%3A00.000Z 2024-06-11T11%3A25%3A00.000Z foobar
+	python3 solcast_download.py 29.658884 -82.334525 '2024-06-11 11:10:00.000Z' '2024-06-11 11:25:00.000Z' foobar
 	```
 
 ## Solnet Manage Jobs
