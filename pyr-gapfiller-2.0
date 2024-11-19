@@ -55,19 +55,21 @@ if [[ -z "$node" || -z "$sid" || -z "$startdatetime" || -z "$enddatetime" || -z 
 	printf "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude --longitude --api --token --secret \n"
 
 else
-	sourceids=$(echo $sid | sed "s/\//%2F/g")
-        startdate=$(echo ${startdatetime} | sed "s/ /T/g;s/:/%3A/g")
-        enddate=$(echo ${enddatetime} | sed "s/ /T/g;s/:/%3A/g")
-        log_path="logs/pyr-gapfiller.log"
-        maxoutput=1000000
+    sourceids=$(echo $sid | sed "s/\//%2F/g")
+    startdate=$(echo ${startdatetime} | sed "s/ /T/g;s/:/%3A/g")
+    enddate=$(echo ${enddatetime} | sed "s/ /T/g;s/:/%3A/g")
+    log_path="logs/pyr-gapfiller.log"
+    maxoutput=1000000
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Month --maxoutput 1000000 --token $token --secret $secret" 2>&1 | tee -a $log_path
-	test_params=$(python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Month --maxoutput 1000000 --token $token --secret $secret)
-        echo "$(date +'%Y-%m-%d %H:%M:%S') $test_params" 2>&1 | tee -a $log_path
+    echo "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Month --maxoutput 1000000 --token $token --secret $secret" 2>&1 | tee -a $log_path
+    test_params=$(python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Month --maxoutput 1000000 --token $token --secret $secret)
+    echo "$(date +'%Y-%m-%d %H:%M:%S') $test_params" 2>&1 | tee -a $log_path
 
-	if [[ "$test_params" == *"Error"* ]] ; then
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Usage: pyr-gapfiller-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddate|-e [ENDDATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" 2>&1 | tee -a $log_path
-	else
+    if [[ "$test_params" == *"Error"* ]] ; then
+	
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Usage: pyr-gapfiller-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddate|-e [ENDDATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" 2>&1 | tee -a $log_path
+    
+    else
 
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-gapfiller-2.0 --node $node --sourceid $sid --startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
@@ -559,5 +561,5 @@ else
 
 	fi
 
-	fi
+     fi
 fi
