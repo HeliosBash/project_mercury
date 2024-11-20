@@ -4,7 +4,7 @@ while [ $# -gt 0 ] ; do
     case "$1" in
     --node*|-n*)
       if [[ "$1" != *=* ]]; then shift; fi # Value is next arg if no `=`
-      node="${1#*=}"
+      node="${1#*=}" 
       ;;
     --sourceid*|-i*)
       if [[ "$1" != *=* ]]; then shift; fi
@@ -43,7 +43,7 @@ while [ $# -gt 0 ] ; do
       secret="${1#*=}"
       ;;
     --help|-h)
-      printf "Usage: pyr-filler-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME] --enddatetime|-e [END DATETIME] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" # Flag argument
+      printf "Usage: pyr-filler-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME] --enddatetime|-e [END DATETIME] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]"
       exit 0
       ;;
     *)
@@ -54,11 +54,14 @@ while [ $# -gt 0 ] ; do
   shift
 done
 
+# Checks if parameters have no value
+
 if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
 
 	printf "Error: The following arguments are required --node --sourceid --startdate --enddate --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
 
 else
+
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-filler-2.0 --node $node --sourceid $sid --timezone $timezone --localstartdate \"$localstartdate\" --enddate \"$localenddate\" --latitude $lat --longitude $long --api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
@@ -101,12 +104,16 @@ else
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for any data in specified date range " 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
 	
-	# Checks date range for any existing datum and aborts if there are any
+	# First condition is to check the output for error messages
+	# Second condition is to check for any data within date range
+	# If first two conditions are false then proceed with the next process
+	 
 	>data/${node}_${sourceids}_${startdate}_${enddate}_datum
+	
 	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret 2>&1 | tee -a data/${node}_${sourceids}_${startdate}_${enddate}_datum
 
 	datum_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum | wc -l)    
-
+	
 	if [[ "$(cat data/${node}_${sourceids}_${startdate}_${enddate}_datum)" == *"Error"* ]] ; then
                 echo -n "$(date +'%Y-%m-%d %H:%M:%S') " | tee -a $log_path
                 cat data/${node}_${sourceids}_${startdate}_${enddate}_datum 2>&1 | tee -a $log_path
@@ -116,16 +123,17 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Aborting, datum present, adjust date range" 2>&1 | tee -a $log_path
 
 	else
+		# Download solcast data
 		echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" 2>&1 | tee -a $log_path
 	
         	solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_script.sh"
         	solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
         	>$solcast_script_path
-		rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
 
 		start_date_epoch=$(date -d "$utcstartdate" +%s)
         	end_date_epoch=$(date -d "$utcenddate" +%s)
-
+		
+		# Determine the number of days between the date range. Solcast downloads have a limit of 30 days.
 		date_range_num_days=$((end_date_epoch - start_date_epoch))
 
 		if [ $date_range_num_days -gt 2606399 ]; then
@@ -161,33 +169,35 @@ else
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" 2>&1 | tee -a $log_path
 		sleep 5
-		/bin/bash $solcast_script_path
+		/bin/bash $solcast_script_path 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Process Completed" 2>&1 | tee -a $log_path
 		
+		# Compute irradiance hours using solcast data
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
 		
 		runtime=$(date +"%Y%m%d_%H%M%S")
-		irradiance_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_PYRGAP_SolNetIMport_${runtime}.csv"
+		irradiance_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_PYRFILL_SolNetIMport_${runtime}.csv"
 		a=0
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
 		while IFS=, read periodend periodstart period ghi
 		do
-			ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
+			periodstart_formatted=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
              		if [[ $a = 0 ]] ; then
-                 		e2=$ghi
                  		echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
-                 		echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
-                 		a=1
+                 		echo "$node,$sid,$periodstart_formatted,$ghi,$ghi" >> $irradiance_data_path
+				ghi_prev=$ghi
+				a=1
              		else
-		 		d312=$(echo "scale=8; $ghi/12" | bc )
+		 		ghi_5min=$(echo "scale=8; $ghi/12" | bc )
+				# Add zero padding at the left side of the decimal point if ghi is less than one and is a decimal value
                 		if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
-                    			nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.8f", $0}' )
+                    			ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc | awk '{printf "%.8f", $0}' )
                  		else
-                    			nir=$(echo "$e2 + $d312" | bc  )
+                    			ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc )
                  		fi
-                 		e2=$nir
-                		echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
+                 		ghi_prev=$ghi_new
+                		echo "$node,$sid,$periodstart_formatted,$ghi,$ghi_new" >> $irradiance_data_path
              		fi
 		done < $solcast_csv_path
 	
