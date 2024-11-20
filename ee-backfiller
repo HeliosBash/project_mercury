@@ -377,7 +377,6 @@ else
 
 		solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_script.sh"
 		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
-		rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
 		>$solcast_script_path
 		if [ $gap_num_days -gt 2606399 ]; then
 			
@@ -461,40 +460,38 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from $startdate to $enddate" | tee -a $log_path
 		while IFS=, read periodend periodstart period ghi
 		do
-       			ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
+       			periodstart_formatted=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
         		if [[ $a = 0 ]] ; then
-            			e2=$ghi
             			echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
-            			echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
+            			echo "$node,$sid,$periodstart_formatted,$ghi,$ghi" >> $irradiance_data_path
+            			ghi_prev=$ghi
             			a=1
             			ghitotal=$((ghi+ghitotal))
-            			echo $ddt,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+            			echo $periodstart_formatted,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
         		else
-            			d312=$(echo "scale=8; $ghi/12" | bc )
+            			ghi_5min=$(echo "scale=8; $ghi/12" | bc )
 				if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
-					nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.8f", $0}' )
+					ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc | awk '{printf "%.8f", $0}' )
 				else
-					nir=$(echo "$e2 + $d312" | bc  )
+					ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc  )
 				fi
 				
-				e2=$nir
+				ghi_prev=$ghi_new
             			ghitotal=$((ghi+ghitotal))
-            			echo $ddt,$ghi,$nir >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
-           			echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
+           			echo "$node,$sid,$periodstart_formatted,$ghi,$ghi_new" >> $irradiance_data_path
+            			echo $periodstart_formatted,$ghi,$ghi_new >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
         		fi
-
 		done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
 
         	echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal"
 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Enter Total Enery in KWH: " 
         	read total_energy < /dev/tty
-		#eesourceids=$sourceids
 		prevenergyinwatthours=0
 
         	echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" | tee -a $log_path
 
 		echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
-        	while IFS=, read ddt irr irh
+        	while IFS=, read startperiod irr irh
         	do
                 	ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc )
                 	energy=$(echo "scale=8 ; $total_energy * $ghiratio * 12" | bc )
@@ -502,9 +499,7 @@ else
                 	watthours=$(echo "scale=8 ; $energyinwatts / 12" | bc )
 			totalwatthours=$(echo "scale=8 ; $prevenergyinwatthours + $watthours" | bc )
                		prevenergyinwatthours=$totalwatthours	
-			# >data/review_ee_computation
-			# echo "$ddt,$irr,$ghitotal,$ghiratio,$total_energy,$energyinwatts,$totalwatthours" >> data/review_ee_computation
-			echo "$node,$sid,$ddt,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
+			echo "$node,$sid,$startperiod,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
 		done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" | tee -a $log_path
@@ -541,7 +536,6 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
 		filesizebytes=$(ls -l $electrical_energy_data_path | awk '{print $5}')	
 		filsesizemb=$(($filesizebytes/1048576))
-				
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
 		if [ $filsesizemb -lt 20 ] ; then
 			compress="disabled"

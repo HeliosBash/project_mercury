@@ -407,7 +407,6 @@ else
 
 		solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_script.sh"
 		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
-		rm -f data/${node}_${sourceids}_${lat}_${long}_solcast_script.sh
 		>$solcast_script_path
 		if [ $gap_num_days -gt 2606399 ]; then
 			
@@ -509,21 +508,21 @@ else
 				while IFS=, read periodend periodstart period ghi
 				do
 
-       					 ddt=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
+       					periodstart_formatted=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
         				if [[ $a = 0 ]] ; then
-            					e2=$ghi
             					echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
-            					echo "$node,$sid,$ddt,$ghi,$ghi" >> $irradiance_data_path
-            					a=1
+            					echo "$node,$sid,$periodstart_formatted,$ghi,$ghi" >> $irradiance_data_path
+            					ghi_prev=$ghi
+						a=1
         				else
-						d312=$(echo "scale=8; $ghi/12" | bc)
+						ghi_5min=$(echo "scale=8; $ghi/12" | bc)
 						if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
-                                                        nir=$(echo "$e2 + $d312" | bc | awk '{printf "%.8f", $0}' )
+                                                        ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc | awk '{printf "%.8f", $0}' )
                                                 else
-                                                        nir=$(echo "$e2 + $d312" | bc  )
+                                                        ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc  )
                                                 fi
-            					e2=$nir
-           					echo "$node,$sid,$ddt,$ghi,$nir" >> $irradiance_data_path
+            					ghi_prev=$ghi_new
+           					echo "$node,$sid,$periodstart_formatted,$ghi,$ghi_new" >> $irradiance_data_path
         				fi
 				done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
 
