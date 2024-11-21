@@ -116,17 +116,23 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Aborting, datum present, adjust date range" 2>&1 | tee -a $log_path
 	else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" 2>&1 | tee -a $log_path
-	
+		
+		# File where the python commands to download solcast data will be stored.
         	solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_script.sh"
-        	solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
+        	
+		# File where the result of the python commands to download solcast data will be stored.
+		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
         	>$solcast_script_path
 
+		# UTC date is used as it is  required when downloading solcast data. Date is converted to epoch to perform aritmethtic operation with the date.
 		start_date_epoch=$(date -d "$utcstartdate" +%s)
         	end_date_epoch=$(date -d "$utcenddate" +%s)
 
-		date_range_num_days=$((end_date_epoch - start_date_epoch))
+		# Computes the difference between the start and end dates to determine the number of seconds between the date range.
+		date_range_num_seconds=$((end_date_epoch - start_date_epoch))
 
-		if [ $date_range_num_days -gt 2606399 ]; then
+		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.
+		if [ $date_range_num_seconds -gt 2606399 ]; then
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple solcast queries" 2>&1 | tee -a $log_path
 			solcast_start=$utcstartdate
                 	solcast_end=$utcenddate
@@ -134,16 +140,16 @@ else
 
 			echo "python3 solcast_download.py $lat $long $(echo $solcast_start | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g' ) $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 
-			solcast_num_days=$date_range_num_days
+			solcast_num_seconds=$date_range_num_seconds
 
-			while [ $solcast_num_days -gt 2606399 ]
+			while [ $solcast_num_seconds -gt 2606399 ]
                 	do
 				prev_solcast_partial=$(date --date "$solcast_partial + 1 day" +'%Y-%m-%d 00:00:00Z')
                         	solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
 				solcast_end_epoch=$(date -d "$solcast_end" +%s )
 
-				solcast_num_days=$((solcast_end_epoch - solcast_partial_epoch))
-				if [ $solcast_num_days -gt 2606399 ]; then
+				solcast_num_seconds=$((solcast_end_epoch - solcast_partial_epoch))
+				if [ $solcast_num_seconds -gt 2606399 ]; then
 					solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59Z' )
                                 	echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
 				else

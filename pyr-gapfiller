@@ -342,13 +342,13 @@ else
 		new_start_gap_local=$(date --date @$new_start_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
 		new_end_gap=$(date --date @$new_end_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
 		new_end_gap_local=$(date --date @$new_end_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
-		gap_num_days=$((end_gap_epoch - start_gap_epoch))
+		gap_num_seconds=$((end_gap_epoch - start_gap_epoch))
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in UTC: $new_start_gap" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in UTC: $new_end_gap" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in Local Datetime: $new_start_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
-                echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_days/60/60/24)) " 2>&1 | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_seconds/60/60/24)) " 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
 		python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
 		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
@@ -404,11 +404,16 @@ else
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 5*************" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Preparing Solcast Query Data" 2>&1 | tee -a $log_path
-
+		
+		# File where the python commands to download solcast data will be stored.
 		solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_script.sh"
+		
+		# File where the result of the python commands to download solcast data will be stored.
 		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
 		>$solcast_script_path
-		if [ $gap_num_days -gt 2606399 ]; then
+
+		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.
+		if [ $gap_num_seconds -gt 2606399 ]; then
 			
 			solcast_start=$(date --date "$start_gap" +'%Y-%m-%d 00:00:00' )
                         solcast_end=$(date --date "$end_gap" +'%Y-%m-%d 23:59:59' )
@@ -417,16 +422,16 @@ else
 
 			echo "python3 solcast_download.py $lat $long $(echo $solcast_start | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g' ) $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 			
-			solcast_num_days=$gap_num_days
+			solcast_num_seconds=$gap_num_seconds
 
-			while [ $solcast_num_days -gt 2606399 ]
+			while [ $solcast_num_seconds -gt 2606399 ]
 			do
 				prev_solcast_partial=$(date --date "$solcast_partial + 1 day" +'%Y-%m-%d 00:00:00')
 				solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
 		                solcast_end_epoch=$(date -d "$solcast_end" +%s )
 				
-				solcast_num_days=$((solcast_end_epoch - solcast_partial_epoch))
-				if [ $solcast_num_days -gt 2606399 ]; then
+				solcast_num_seconds=$((solcast_end_epoch - solcast_partial_epoch))
+				if [ $solcast_num_seconds -gt 2606399 ]; then
 					format_prev_solcast_partial=$(echo $prev_solcast_partial | awk '{print $1}')
 					solcast_partial=$(date --date "$format_prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59' )
 					echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/$/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
