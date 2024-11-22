@@ -156,12 +156,17 @@
 
 - [ ] 	Usage:
 	```
-	python3 solcast_download.py [latitude] [longitude] [UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] [UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] [solcast_api_token]
+	python3 solcast_download.py --latitude [latitude] --longitude [longitude] --startdate [UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --enddate [UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] --token [solcast_api_token]
 	```
 
 - [ ] 	Example:	
 	```
-	python3 solcast_download.py 29.658884 -82.334525 '2024-06-11 11:10:00.000Z' '2024-06-11 11:25:00.000Z' foobar
+	# python3 solcast_download.py --latitude 41.7287427 --longitude -71.2782335 --startdate '2024-11-07 22:13:40.000Z' --enddate '2024-11-15 02:48:14.000Z' --token foobar
+	2024-11-07T22:15:00Z,2024-11-07T22:10:00Z,PT5M,0
+	2024-11-07T22:20:00Z,2024-11-07T22:15:00Z,PT5M,0
+	2024-11-07T22:25:00Z,2024-11-07T22:20:00Z,PT5M,0
+	2024-11-07T22:30:00Z,2024-11-07T22:25:00Z,PT5M,0
+
 	```
 
 ## Solnet Manage Jobs

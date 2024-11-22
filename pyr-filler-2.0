@@ -153,7 +153,7 @@ else
                 	solcast_end=$utcenddate
                 	solcast_partial=$(date --date "$utcstartdate + 30 days" +'%Y-%m-%d 23:59:59Z')
 
-			echo "python3 solcast_download.py $lat $long $(echo $solcast_start | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g' ) $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
+			echo "python3 solcast_download.py --latitude $lat --longitude $long --startdate $(echo $solcast_start | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g' ) --enddate $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') --token $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 
 			solcast_num_seconds=$date_range_num_seconds
 
@@ -166,16 +166,16 @@ else
 				solcast_num_seconds=$((solcast_end_epoch - solcast_partial_epoch))
 				if [ $solcast_num_seconds -gt 2606399 ]; then
 					solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59Z' )
-                                	echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+                                	echo "python3 solcast_download.py --latitude $lat --longitude $long --startdate $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') --enddate $(echo $solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') --token $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
 				else
-					echo "python3 solcast_download.py $lat $long $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $(echo $solcast_end  | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
+					echo "python3 solcast_download.py --latitude $lat --longitude $long --startdate $(echo $prev_solcast_partial | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') --enddate $(echo $solcast_end  | sed 's/ /T/g;s/:/%3A/g;s/Z/.000Z/g') --token $solcast_api_token >> $solcast_csv_path" | tee -a $solcast_script_path
                                 	break
                         	fi
 			done
 	
 	
 		else
-                        echo "python3 solcast_download.py $lat $long $startdate $enddate $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
+                        echo "python3 solcast_download.py --latitude $lat --longitude $long --startdate $startdate --enddate $enddate --token $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
 		fi
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" 2>&1 | tee -a $log_path
