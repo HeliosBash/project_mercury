@@ -137,15 +137,11 @@ else
 				localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
 				
 				# Assign the start and end gap dates to variables
-				#startdate=$(echo $prevUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
-        			#enddate=$(echo $createdUTCDate | sed 's/ /T/g;s/:/%3A/g;s/Z//g')
 				startdate=$(echo $prevUTCDate | awk '{printf $1}')
                                 enddate=$(echo $createdUTCDate | awk '{printf $1}')
 
 
 				# Formats the dates to be used in the next process in determining the gap in data aggregated hourly
-				#starthour=$( echo $startdate | sed "s/04%3A00%3A00/00%3A00%3A00/g")
-			        #endhour=$( echo $enddate | sed "s/04%3A00%3A00/23%3A59%3A00/g" )
 				starthour="${startdate}T00%3A00"
                                 endhour="${enddate}T23%3A59"
 				
@@ -281,8 +277,8 @@ else
 				next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
 				start_gap_line_number=$((next_possible_gap_line_number-1))
                                 irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
-				#echo "irradianceHours = $irradianceHours"
-				#while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
+				
+`				#while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
                                 while  [[ -z "$irradianceHours" ]]
 				do
                                       next_possible_gap_line_number=$((next_possible_gap_line_number+1))
@@ -299,10 +295,6 @@ else
 				end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )	
 				end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )	
 				end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
-				#start_gap_localdatetime="$start_gap_localDate $start_gap_localTime"
-				#end_gap_localdatime="$end_gap_localDate $end_gap_localTime" 
-				#localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
-                                #localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
 					
                                 datetime=$(echo $createdUTCDate | sed "s/Z//g")
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
@@ -419,17 +411,8 @@ else
 		a=0
 
 		irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Trimming File for periods between $startperiod and $endperiod" | tee -a $log_path
-		tail -n +2 $solcast_csv_path | while IFS=, read periodend periodstart period ghi
-		do
-        		rowdate=$(date -d "$periodstart" +%s)
-        		if [[ $rowdate -gt $startperiodepoch && $rowdate -lt $endperiodepoch ]] ; then
-                		echo "$periodend,$periodstart,$period,$ghi" >> data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
-        		fi
-		done
-
-		startdate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | head -n 1 | cut -d , -f 2)
-		enddate=$(cat data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat | tail -n 1 | cut -d , -f 2)
+		startdate=$(cat $solcast_csv_path | head -n 1 | cut -d , -f 2)
+		enddate=$(cat $solcast_csv_path | tail -n 1 | cut -d , -f 2)
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
 		while IFS=, read periodend periodstart period ghi
@@ -450,7 +433,7 @@ else
             			ghi_prev=$ghi_new
            			echo "$node,$sid,$periodstart_formatted,$ghi,$ghi_new" >> $irradiance_data_path
         		fi
-		done < data/${node}_${sourceids}_PYRGAP_SolNetIMport_${runtime}_trimmed_data.dat
+		done < $solcast_csv_path
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $irradiance_data_path" | tee -a $log_path
                 head -n 5 $irradiance_data_path | tee -a $log_path
