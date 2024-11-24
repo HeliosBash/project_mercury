@@ -204,15 +204,21 @@ else
 			while IFS=, read periodend periodstart period ghi
 			do
 				periodstart_formatted=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
+
+				# First condition is used to identify the first record where accumulating irradiance hours is just equal to the instantaneuous irradiance
              			if [[ $a = 0 ]] ; then
                  			echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
                  			echo "$node,$sid,$periodstart_formatted,$ghi,$ghi" >> $irradiance_data_path
                  			ghi_prev=$ghi
                  			a=1
              			else
+					# Adds a 12th of an irradiance hour based on the instantaneous irradiance, in this case  ghi. 
+					# That’s because these are 5-min resolution data samples, and there are 12 of them in one 60-minute hour.
 		 			ghi_5min=$(echo "scale=8; $ghi/12" | bc )
-                			if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
-                    				ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc | awk '{printf "%.8f", $0}' )
+                			
+					if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
+						# Fixes missing leading 0 when the value is a decimal and less than 1 
+						ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc | awk '{printf "%.8f", $0}' )
                  			else
                     				ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc  )
                  			fi
