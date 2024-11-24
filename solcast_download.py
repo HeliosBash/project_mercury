@@ -21,9 +21,9 @@ def solcast_download(lat, long, startdate, enddate, token):
         'Authorization': bearer
     }
 
-    formatted_startdate=startdate.replace(" ","T").replace(":","%3A")
-    formatted_enddate=enddate.replace(" ","T").replace(":","%3A")
-    url = f"https://api.solcast.com.au/data/historic/radiation_and_weather?latitude={lat}&longitude={long}&period=PT5M&start={formatted_startdate}&end={formatted_enddate}&format=json&time_zone=utc&output_parameters=ghi"
+    url_encoded_startdate=startdate.replace(" ","T").replace(":","%3A")
+    url_encoded_enddate=enddate.replace(" ","T").replace(":","%3A")
+    url = f"https://api.solcast.com.au/data/historic/radiation_and_weather?latitude={lat}&longitude={long}&period=PT5M&start={url_encoded_startdate}&end={url_encoded_enddate}&format=json&time_zone=utc&output_parameters=ghi"
 
     response = requests.get(url, headers=headers)
 
@@ -39,15 +39,21 @@ def solcast_download(lat, long, startdate, enddate, token):
         print("Error: Failed to decode JSON response")
         sys.exit(1)
 
+    standard_format_startdate=startdate.replace("T"," ").replace("%3A",":")
+    standard_format_enddate=enddate.replace("T"," ").replace("%3A",":").replace(".000Z","Z")
+    
     for i in data.get('estimated_actuals', []):
         period_end=i["period_end"].replace('+00:00','Z')
         dateobj = datetime.strptime(period_end.replace('T', ' ').replace('Z', ''), '%Y-%m-%d %H:%M:%S')
         ghi=i["ghi"]
         period=i["period"]
         duration=int(re.sub("[PTM]","",period))
-        period_start=str(dateobj - timedelta(minutes=duration)).replace(' ','T') + 'Z'
-
-        print (f"{period_end},{period_start},{period},{ghi}")
+        period_start=str(dateobj - timedelta(minutes=duration))
+        
+        if period_start > standard_format_startdate and period_start < standard_format_enddate:
+            formatted_period_start=period_start.replace(' ','T') + 'Z'
+            formatted_period_end=period_end.replace('+00:00','Z')
+            print (f"{formatted_period_end},{formatted_period_start},{period},{ghi}")
 
 def main():
     # Parser object to handle the arguments
