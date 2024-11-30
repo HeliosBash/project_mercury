@@ -112,27 +112,28 @@ else
 			prevUTCDate="$createdUTCDate"
 		else
 			# Compares next iteration of dates to the expected date which is a day ahead, if it matches then not a start gap date, else a possible start gap date 
-			if [[ "$localDate" != "$expected_next" ]] ; then
+			 current_line_number=$(cat -n $day_data_path | grep "$createdUTCDate" | awk '{print $1 }')
+                         next_possible_gap_line_number=$((current_line_number+1))
+                         next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
+                         next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 8 )
+                         next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 9 )
+
+			if [[ "$localDate" != "$expected_next" ]] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]; then
 				
 				# Next process show that once a possible start gap date is identified, its not yet definitive that the next date iteration is the end gap date as it could be bad data where irradiance hours is zero or null
 				
-				# Gets the line number of the possible start gap
-				start_gap_line_number=$(cat -n $day_data_path | grep $prevlocalDate | awk '{print $1 }')
-				
-				# Line number of the possible end gap
-				next_possible_gap_line_number=$((start_gap_line_number+1))
-
 				# Checks current iteration if it has 0 or empty values for irradiance hours, while this is true, it continues to iterate through the data 
 				# and increments the line number of the possible end gap until the datum is valid
-				
-				#while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
-				while [[ -z "$irradianceHours" ]]
-				do
-        				irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | awk -F "," '{print $NF}')
-                			next_possible_gap_line_number=$((next_possible_gap_line_number+1))
-				done
+				while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]
+                                do
+                                        next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+                                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 8)
+                                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 9)
+                                done
 
+				start_gap_line_number=$current_line_number
 				# Once the line number of the end gap is determined, then extract the utc and local dates from the line
+				prevUTCDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
 				createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
 				localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
 				
@@ -144,7 +145,6 @@ else
 				# Formats the dates to be used in the next process in determining the gap in data aggregated hourly
 				starthour="${startdate}T00%3A00"
                                 endhour="${enddate}T23%3A59"
-				
 
 				# Used only in the next condition to display the proper output message 
 				gap_in_days=1
@@ -195,17 +195,22 @@ else
         	else
 
 			datetime="$localDate $localTime"
-                	if [[ "$datetime" != "$expected_next_hour" ]] ; then
-				
-				start_gap_line_number=$(cat -n $hour_data_path | grep "$localDate,$localTime" | awk '{print $1 }')
-                                next_possible_gap_line_number=$((start_gap_line_number+1))
+			current_line_number=$(cat -n $hour_data_path | grep "$createdUTCDate" | awk '{print $1 }')
+                        next_possible_gap_line_number=$((current_line_number+1))
+                        next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 2 )
+                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 8 )
+                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 9 )
 
-                                #while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
-                                while [[ -z "$irradianceHours" ]]
-				do
-                                	irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | awk -F "," '{print $NF}')
+                	if [[ "$datetime" != "$expected_next_hour" ]] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]; then
+				
+				while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]
+                                do
                                         next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+                                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 8 )
+                                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 9 )
                                 done
+
+				start_gap_line_number=$current_line_number
 
                                 createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
                                 localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 2 )
@@ -213,6 +218,7 @@ else
 				
 				datetime="$localDate $localTime"
 			
+				prevUTCDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
 				prevUTCDate_epoch=$(date -d "$prevUTCDate" +%s)
 				hourbefore=$((prevUTCDate_epoch-3600))
 				prev_hour=$(date --date @$hourbefore +"%Y-%m-%d %H:00")
@@ -273,29 +279,37 @@ else
 			datetime_epoch=$(date -d "$datetime" +%s)
 			minute_difference=$((datetime_epoch - prevdatetime_epoch))
 			#echo "$datetime $minute_difference"
-			if [ $minute_difference -gt 3601 ] ; then
-				next_possible_gap_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
-				start_gap_line_number=$((next_possible_gap_line_number-1))
-                                irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
-				
-`				#while [[ $irradianceHours == 0 ]] || [[ -z "$irradianceHours" ]]
-                                while  [[ -z "$irradianceHours" ]]
-				do
+
+			current_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
+                        next_possible_gap_line_number=$((current_line_number+1))
+                        next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
+                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-1)}' )
+                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+
+                        if [ $minute_difference -gt 3601 ] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] ; then
+
+                                while [[  -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]
+                                do
                                       next_possible_gap_line_number=$((next_possible_gap_line_number+1))
-				      irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+                                      next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-1)}' )
+                                      next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
                                 done
-                                start_gap_created=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+
+                                start_gap_line_number=$current_line_number
+				
+				start_gap_created=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
 				end_gap_created=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+			
 				start_gap_created_halfsec=$(echo $start_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')
 				end_gap_created_halfsec=$(echo $end_gap_created | awk -F ':' '{print $NF}' | sed 's/Z//g')	
 
 				start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
 				start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
 				start_gap_irradiancehours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
+				
 				end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )	
 				end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )	
 				end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
-					
                                 datetime=$(echo $createdUTCDate | sed "s/Z//g")
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_created and $end_gap_created" 2>&1 | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localDate $start_gap_localTime:$start_gap_created_halfsec and $end_gap_localDate $end_gap_localTime:$end_gap_created_halfsec" 2>&1 | tee -a $log_path
@@ -359,12 +373,12 @@ else
 		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
 		>$solcast_script_path
 
+		solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
+                solcast_end=$(date --date @$new_end_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
+
 		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.
 		if [ $gap_num_seconds -gt 2606399 ]; then
 			
-			solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d 00:00:00Z' )
-                        solcast_end=$(date --date @$new_end_gap_epoch +'%Y-%m-%d 23:59:59Z' )
-
 			solcast_partial=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d 23:59:59Z')
 
 			echo "python3 solcast_download.py --latitude $lat --longitude $long --startdate '$solcast_start' --enddate '$solcast_partial' --token $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
