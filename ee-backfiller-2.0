@@ -316,6 +316,10 @@ else
 		# File where the result of the python commands to download solcast data will be stored.
 		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
 		>$solcast_script_path
+	
+		solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
+                solcast_end=$(date --date @$new_end_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
+
 		if [ $gap_num_seconds -gt 2606399 ]; then
 			
 			solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )

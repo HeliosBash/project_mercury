@@ -360,11 +360,11 @@ else
 		>$solcast_script_path
 		
 		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.
+		solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
+                solcast_end=$(date --date @$new_end_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
+
 		if [ $gap_num_seconds -gt 2606399 ]; then
 			
-			solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d 00:00:00Z' )
-                        solcast_end=$(date --date @$new_end_gap_epoch +'%Y-%m-%d 23:59:59Z' )
-
 			solcast_partial=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d 23:59:59Z')
 
 			echo "python3 solcast_download.py --latitude $lat --longitude $long --startdate '$solcast_start' --enddate '$solcast_partial' --token $solcast_api_token > $solcast_csv_path" | tee -a $solcast_script_path
