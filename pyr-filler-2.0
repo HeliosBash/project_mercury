@@ -58,7 +58,7 @@ done
 
 if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
 
-	printf "Error: The following arguments are required --node --sourceid --startdate --enddate --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
+	printf "Error: The following arguments are required --node --sourceid --timezone --startdatetime --enddatetime --latitude --longitude --api --token --secret \n" 2>&1 | tee -a $log_path
 
 else
 
