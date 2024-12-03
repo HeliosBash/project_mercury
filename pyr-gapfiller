@@ -88,7 +88,7 @@ else
 
 	# File path of the output file with PYR data in day aggregates
 	day_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_days"
-	
+	total_lines=$(cat $day_data_path | wc -l)
 	# Python command to extract PYR data. Note the aggregate parameter is set to Day and dates are in UTC.
 
 	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret > $day_data_path
@@ -112,6 +112,11 @@ else
 			# Additional checking is needed if date match expected date but data is bad
                          current_line_number=$(cat -n $day_data_path | grep "$createdUTCDate" | awk '{print $1 }')
                          next_possible_gap_line_number=$((current_line_number+1))
+
+			 if [[ $next_possible_gap_line_number == $((total_lines+1)) ]] ; then
+                                gap_in_days=0
+                         fi
+
                          next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
                          next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 8 )
                          next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 9 )
@@ -178,6 +183,7 @@ else
 	first_row_hours=0
 	gap_in_hours=0
 	hour_data_path="data/${node}_${sourceids}_${starthour}_${endhour}_datum_hours"
+	total_lines=$(cat $hour_data_path | wc -l)
 
 	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starthour --enddate $endhour --aggregate Hour --maxoutput $maxoutput --token $token --secret $secret > $hour_data_path
 	sed -i '1d' $hour_data_path
@@ -200,6 +206,12 @@ else
 			datetime="$localDate $localTime"
 			current_line_number=$(cat -n $hour_data_path | grep "$createdUTCDate" | awk '{print $1 }')
 			next_possible_gap_line_number=$((current_line_number+1))
+			
+			if [[ $next_possible_gap_line_number == $((total_lines+1)) ]] ; then
+                                gap_in_hours=0
+                                break
+                        fi
+
                         next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 2 )
                         next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 8 )
                         next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 9 )
@@ -263,7 +275,8 @@ else
 	first_row_minutes=0
 	gap_in_minutes=0
 	minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
-	
+	total_lines=$(cat $minute_data_path | wc -l)
+
 	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > $minute_data_path
 	sed -i '1d' $minute_data_path
 	sleep 1
@@ -283,6 +296,12 @@ else
 			
 			current_line_number=$(cat -n $minute_data_path | grep "$createdUTCDate" | awk '{print $1 }')
                         next_possible_gap_line_number=$((current_line_number+1))
+
+			if [[ $next_possible_gap_line_number == $((total_lines+1)) ]] ; then
+                                gap_in_minutes=0
+                                break
+                        fi
+
                         next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
                         next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-1)}' )
                         next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
