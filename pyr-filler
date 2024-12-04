@@ -111,12 +111,53 @@ else
 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') " | tee -a $log_path 
 		cat data/${node}_${sourceids}_${startdate}_${enddate}_datum 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Usage: pyr-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [END DATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" 2>&1 | tee -a $log_path 
-	elif [ $datum_count -gt 0 ]; then
-
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Aborting, datum present, adjust date range" 2>&1 | tee -a $log_path
+	
 	else
-		echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" 2>&1 | tee -a $log_path
-		
+		if [ $datum_count -gt 0 ]; then
+
+                	formatted_localstartdate=$(date -d "$localstartdate" +'%Y-%m-%d %H:%M:%S')
+               		formatted_localenddate=$(date -d "$localenddate" +'%Y-%m-%d %H:%M:%S')
+
+                	while true
+                	do
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Preview and Confirm commands below will be executed:" 2>&1 | tee -a $log_path
+                        	echo "Preview: python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate '$formatted_localstartdate' --localenddate '$formatted_localenddate' --token $token --secret $secret" 2>&1 | tee -a $log_path
+                        	echo "Confirm: python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate '$formatted_localstartdate' --localenddate '$formatted_localenddate' --token $token --secret $secret" 2>&1 | tee -a $log_path
+                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to remove the now (Y/N)?" 2>&1 | tee -a $log_path
+                        	read continue_result < /dev/tty
+
+                        	if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" 2>&1 | tee -a $log_path
+                                	break;
+                        	fi
+               		done
+
+
+               		if [[ "${continue_result^^}" == "Y" ]] ; then
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate '$formatted_localstartdate' --localenddate '$formatted_localenddate' --token $token --secret $secret" 2>&1 | tee -a $log_path
+
+                        	result_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate '$formatted_localstartdate' --localenddate '$formatted_localenddate' --token $token --secret $secret)
+
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path
+
+                        	if [ $result_count -ne $gap_count ] ; then
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Process. Count doesn't match, adjust date and run manually" 2>&1 | tee -a $log_path
+                        	else
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of data between date range." 2>&1 | tee -a $log_path
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate '$formatted_localstartdate' --localenddate '$formatted_localenddate' --token $token --secret $secret in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+                                	sleep 10
+                               		python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate '$formatted_localstartdate' --localenddate '$formatted_localenddate' --token $token --secret $secret 2>&1 | tee -a $log_path
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_manage_jobs.py expire list $token $secret to show progress" 2>&1 | tee -a $log_path
+                       		fi
+
+                	else
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Delete Process Aborted" 2>&1 | tee -a $log_path
+			fi
+
+		else
+			echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" 2>&1 | tee -a $log_path
+		fi
+
 		# File where the python commands to download solcast data will be stored.
         	solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_script.sh"
         	
@@ -284,7 +325,7 @@ else
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_irradiancehours" | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" | tee -a $log_path
 
-			echo $stitchlocaldate $stitchlocaltime $end_gap_irradiancehours
+			#echo $stitchlocaldate $stitchlocaltime $end_gap_irradiancehours
 
 
            		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path
