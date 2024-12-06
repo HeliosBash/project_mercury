@@ -65,8 +65,8 @@ else
     log_path="logs/ee-backfiller.log"
     maxoutput=1000000
 
-    echo "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Month --maxoutput 1000000 --token $token --secret $secret" 2>&1 | tee -a $log_path
-    test_params=$(python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Month --maxoutput 1000000 --token $token --secret $secret)
+    echo "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"Month\" --maxoutput=\"1000000\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+    test_params=$(python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="Month" --maxoutput="1000000" --token="$token" --secret="$secret")
     echo "$(date +'%Y-%m-%d %H:%M:%S') $test_params" 2>&1 | tee -a $log_path
 
     if [[ "$test_params" == *"Error"* ]] ; then
@@ -77,13 +77,13 @@ else
 
 	echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
-	
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"Day\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+
 	first_row_days=0
 	gap_in_days=0
 	day_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_days"
-
-	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate Day --maxoutput $maxoutput --token $token --secret $secret > $day_data_path
+	
+	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="Day" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $day_data_path
 	
 	sed -i '1d' $day_data_path
 	sleep 1
@@ -134,13 +134,14 @@ else
 		
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 2*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Hours $starthour and $endhour" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starthour --enddate $endhour --aggregate Hour --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$starthour\" --enddate=\"$endhour\" --aggregate=\"Hour\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 
 	first_row_hours=0
 	gap_in_hours=0
 	hour_data_path="data/${node}_${sourceids}_${starthour}_${endhour}_datum_hours"
         
-	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starthour --enddate $endhour --aggregate Hour --maxoutput $maxoutput --token $token --secret $secret > $hour_data_path
+	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$starthour" --enddate="$endhour" --aggregate="Hour" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $hour_data_path
+
 	sed -i '1d' $hour_data_path
 	sleep 1
         while IFS=, read createdUTCDate localDate localTime nodeId sourceId watts_min watts_max current_min current_max voltage_min voltage_max frequency_min frequency_max powerFactor_min powerFactor_max apparentPower_min apparentPower_max reactivePower_min reactivePower_max lineVoltage_min lineVoltage_max current_a_min current_a_max current_b_min current_b_max current_c_min current_c_max voltage_a_min voltage_a_max voltage_b_min voltage_b_max voltage_c_min voltage_c_max voltage_ab_min voltage_ab_max voltage_bc_min voltage_bc_max voltage_ca_min voltage_ca_max watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
@@ -211,12 +212,13 @@ else
 	
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a $log_path
-	
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 	first_row_minutes=0
 	gap_in_minutes=0
 	minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
-	python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > $minute_data_path
+	
+	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $minute_data_path
+	
 	sed -i '1d' $minute_data_path
 	sleep 1
 	while IFS=, read createdUTCDate localDate localTime nodeId sourceId watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
@@ -301,8 +303,10 @@ else
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_seconds/60/60/24)) " 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for datum within the gap " 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py $node $sourceids $new_start_gap $new_end_gap None $maxoutput $token $secret" 2>&1 | tee -a $log_path
-		python3 solnet_query.py --node $node --sourceids $sourceids --startdate $new_start_gap --enddate $new_end_gap --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${new_start_gap}_${new_end_gap}_datum_gap
+		
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$new_start_gap\" --enddate=\"$new_end_gap\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+                python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$new_start_gap" --enddate="$new_end_gap" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
+		
 		gap_count=$(sed '1d'  data/${node}_${new_start_gap}_${new_end_gap}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
 		cat data/${node}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
@@ -471,15 +475,17 @@ else
                         electrical_energy_data_path="${electrical_energy_data_path}.xz"
                         compress="enabled"
                 fi
-
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $electrical_energy_data_path --token $token --secret $secret in 5 seconds. Hit Ctrl + C to Cancel" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" --sourceids=\"$sourceids\" --timezone=\"UTC\" --compression=\"$compress\" --filepath=\"$electrical_energy_data_path\" --token=\"$token\" --secret=\"$secret\" in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
 		sleep 5
-			
-		jobid=$(python3 solnet_import.py --node $node --sourceids $sourceids --timezone UTC --compression $compress --filepath $electrical_energy_data_path --token $token --secret $secret)
-		echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import preview $token $secret $jobid to preview imported data" 2>&1 | tee -a $log_path
-		python3 solnet_manage_jobs.py import preview $token $secret $jobid 2>&1 | tee -a $log_path
-		echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py import confirm $token $secret $jobid will be executed" 2>&1 | tee -a $log_path
-                while true
+
+		jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" --compression="$compress" --filepath="$electrical_energy_data_path" --token="$token" --secret="$secret")	
+
+		echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"preview\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" to preview imported data" | tee -a $log_path
+		python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+		
+		echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" will be executed" | tee -a $log_path
+                
+		while true
                 do
 			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: " 2>&1 | tee -a $log_path
 			read confirm_result < /dev/tty
@@ -496,46 +502,47 @@ else
 
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${new_start_gap}_${new_end_gap}_datum_gap will be deleted first" 2>&1 | tee -a $log_path
                         	cat data/${node}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret to validate count of datum in gap" 2>&1 | tee -a $log_path
+				
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node=\"$nodeId\" --sourceids=\"$sourceids\" --localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+				result_count=$(python3 solnet_expire_preview.py --node="$nodeId" --sourceids="$sourceids" --localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret")
 
-                        	result_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path
 
                         	if [ $result_count -ne $gap_count ] ; then
                                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Count doesn't match, adjust date and run manually" 2>&1 | tee -a $log_path
                         	else
                                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of data in gap."
-                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+                                	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node=\"$nodeId\" --sourceids=\"$sourceids\" --localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" --token=\"$token\" --secret=\"$secret\" in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
                                 	sleep 10
-                                	python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret 2>&1 | tee -a $log_path
+					python3 solnet_expire_confirm.py --node="$nodeId" --sourceids="$sourceids" --localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret" 2>&1 | tee -a $log_path
 
 					echo  "$(date +'%Y-%m-%d %H:%M:%S') Please wait for a few minutes for the datum expire command to take effect" 2>&1 | tee -a $log_path
                         		sleep 60
-
-					check_expire_datum_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
+					check_expire_datum_count=$(python3 solnet_expire_preview.py --node="$nodeId" --sourceids="$sourceids" --localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret") 
+					
 					while [ $check_expire_datum_count -gt 0 ]
 					do
-						check_expire_datum_count=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceids --localstartdate $new_start_gap_local --localenddate $new_end_gap_local --token $token --secret $secret)
+						check_expire_datum_count=$(python3 solnet_expire_preview.py --node="$nodeId" --sourceids="$sourceids" --localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret")
 						sleep 60
 					done
-				
-					echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds.  Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
+					
+					echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
                 		 	sleep 10
-				 	python3 solnet_manage_jobs.py import confirm $token $secret $jobid 2>&1 | tee -a $log_path
+					python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 				fi
 
 			else
-				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py import confirm $token $secret $jobid in 10 seconds.  Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
+				echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
                                 sleep 10
-				python3 solnet_manage_jobs.py import confirm $token $secret $jobid 2>&1 | tee -a $log_path
+				python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " 2>&1 | tee -a $log_path
 			fi
 			
 		
 		else
-			echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. Deleting Staged Data. Executing python3 solnet_manage_jobs.py import delete $token $secret $jobid in 10 seconds. Hit Ctrl + C to Cancel." 2>&1 | tee -a $log_path
-			sleep 10
-			python3 solnet_manage_jobs.py import delete $token $secret $jobid 2>&1 | tee -a $log_path
+			echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. Deleting Staged Data. Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"delete\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+                        sleep 10
+                        python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 
 		fi
 
