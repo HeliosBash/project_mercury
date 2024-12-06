@@ -175,12 +175,12 @@
 
 - [ ]	Usage:		
 	```
-	python3 solnet_manage_jobs.py [jobs] [action] [token] [secret] [jobid]
+	python3 solnet_manage_jobs.py [-h] [--job="{expire,import}"] [--action="{list,view,preview,delete,confirm}"] --token="TOKEN" --secret="SECRET" --jobid="JOBID"
 	```
 
 - [ ]	Example:        
 	```
-	python3 solnet_manage_jobs.py expire list token123 secret1234 
-	python3 solnet_manage_jobs.py import preview token123 secret1234 jobid123
-	python3 solnet_manage_jobs.py import delete token123 secret1234 jobid123
+	python3 solnet_manage_jobs.py --job="expire" --action="list" --token="token123" --secret="secret1234"
+	python3 solnet_manage_jobs.py --job="import" --action="preview" --token="token123" --secret="secret1234" --jobid="jobid123"
+	python3 solnet_manage_jobs.py --job="import" --action="delete" --token="token123" --secret="secret1234" --jobid="jobid123"
 	```

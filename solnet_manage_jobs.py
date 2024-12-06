@@ -60,14 +60,13 @@ def manage_import_jobs(action, token, secret, jobid):
 
 def main():
     parser = argparse.ArgumentParser(description="SolarNetwork Job Manager")
-    parser.add_argument("job", choices=["expire", "import"], help="Job type")
-    parser.add_argument("action", choices=["list", "view", "preview", "delete", "confirm"], help="Action to perform")
-    parser.add_argument("token", help="API Token")
-    parser.add_argument("secret", help="API Secret")
-    parser.add_argument("jobid", nargs='?', help="Job ID (required for certain actions)")
-
+    parser.add_argument("--job", choices=["expire", "import"], help="Job type")
+    parser.add_argument("--action", choices=["list", "view", "preview", "delete", "confirm"], help="Action to perform")
+    parser.add_argument("--token", required=True, help="API Token")
+    parser.add_argument("--secret", required=True, help="API Secret")
+    parser.add_argument("--jobid", required=True, help="Job ID (required for certain actions)")
+    
     args = parser.parse_args()
-
     if args.job == "expire" and args.action == "list":
         list_expire_jobs(args.token, args.secret)
     elif args.job == "import" and args.action == "list":
