@@ -86,12 +86,12 @@
 		
 - [ ] Usage:		
 	```
-	solnet_query.py --node [nodeid] --sourceids [sourceids] --startdate [UTC start datetime in 'YYYY-MM-DD HH:MM'] --enddate [UTC end datetime in 'YYYY-MM-DD HH:MM'] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
+	solnet_query.py --node=[nodeid] --sourceids=[sourceids] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret]
 	```
 		
 - [ ] Example:
 	```
-	python3 solnet_query.py --node 372 --sourceids /G2/S2/S1/PYR/1 --startdate '2024-05-01 00:00' --enddate '2024-06-31 23:59' --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
+	python3 solnet_query.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --startdate="2024-05-01 00:00" --enddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890"
 	```
 
 ### Solnet Query Local
@@ -100,12 +100,12 @@
                 
 - [ ] Usage:          
 	```
-	solnet_query_local.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate [Local end datetime in 'YYYY-MM-DD HH:MM'] --aggregate [Day|Hour|FiveMinute|None] --maxoutput [Max Output] --token [solnet token] --secret [solnet secret]
+	solnet_query_local.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate=[Local end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret]
 	```                
 
 - [ ] Example:        
 	```
-	python3 solnet_query_local.py --node 372 --sourceids /G2/S2/S1/PYR/1 --localstartdate '2024-05-01 00:00' --localenddate '2024-06-31 23:59' --aggregate Day --maxoutput 1000000 --token ABCD1234 --secret WXYZ7890
+	python3 solnet_query_local.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-01 00:00" --localenddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890"
 	```
 
 ## Solnet Expire Datum - Preview
@@ -114,12 +114,12 @@
 		
 - [ ] Usage: 		
 	```
-	solnet_expire_preview.py --node [nodeid] --sourceids [sourceids] --localstartdate [LOCAL start datetime in 'YYYY-MM-DD HH:MM'] --localenddatetime [LOCAL end date in 'YYYY-MM-DD HH:MM'] --token [solnet token] --secret [solnet secret]
+	solnet_expire_preview.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[LOCAL start datetime in 'YYYY-MM-DD HH:MM'] --localenddatetime=[LOCAL end date in 'YYYY-MM-DD HH:MM'] --token=[solnet token] --secret=[solnet secret]
 	```
 
 - [ ] Example:	
 	```
-	python3 solnet_expire_preview.py --node 372 --sourceids /G2/S2/S1/PYR/1 --localstartdate '2024-05-09 19:00:30' --localenddate '2024-06-10 20:59:30' --token ABCD1234 --secret WXYZ7890
+	python3 solnet_expire_preview.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-09 19:00:30" --localenddate="2024-06-10 20:59:30" --token="ABCD1234" --secret="WXYZ7890"
 	```
 
 ## Solnet Expire Datum - Confirm
@@ -128,12 +128,12 @@
 
 - [ ] Usage:          
 	```
-	solnet_expire_confirm.py --node [nodeid] --sourceids [sourceids] --localstartdate [Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate [LOCAL end datetime in 'YYYY-MM-DD HH:MM'] --token [solnet token] --secret [solnet secret]
+	solnet_expire_confirm.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate=[LOCAL end datetime in 'YYYY-MM-DD HH:MM'] --token=[solnet token] --secret=[solnet secret]
 	```		
 
 - [ ] Example:        
 	```
-	python3 solnet_expire_confirm.py --node 372 --sourceids /G2/S2/S1/PYR/1 --localstartdate '2024-05-09 19:00:30' --localenddate '2024-06-10 20:59:30' --token ABCD1234 --secret WXYZ7890
+	python3 solnet_expire_confirm.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-09 19:00:30" --localenddate="2024-06-10 20:59:30" --token="ABCD1234" --secret="WXYZ7890"
 	```
 	
 ## Solnet Import
@@ -142,12 +142,12 @@
 		
 - [ ] Usage:		
 	```
-	solnet_import.py --node [nodeid] --sourceids [sourceids] --timezone [must be set to UTC] --compression [ enabled or disabled ] --filepath [path of csv file with PYR or EE data] --token [solnet token] -secret [solnet secret]
+	solnet_import.py --node=[nodeid] --sourceids=[sourceids] --timezone=[must be set to UTC] --compression=[ enabled or disabled ] --filepath=[path of csv file with PYR or EE data] --token=[solnet token] -secret=[solnet secret]
 	```		
 
 - [ ] Example: 	
 	```
-	python3 solnet_import.py --node 372 --sourceids /G2/S2/S1/PYR/1 --timezone UTC --compression disabled --filepath data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv --token ABCD1234 --secret WXYZ7890
+	python3 solnet_import.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --timezone="UTC" --compression="disabled" --filepath="data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv" --token="ABCD1234" --secret="WXYZ7890"
 	```
 
 ## Solcast Download
@@ -156,12 +156,12 @@
 
 - [ ] 	Usage:
 	```
-	python3 solcast_download.py --latitude [latitude] --longitude [longitude] --startdate [UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --enddate [UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] --token [solcast_api_token]
+	python3 solcast_download.py --latitude=[latitude] --longitude=[longitude] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] --token=[solcast_api_token]
 	```
 
 - [ ] 	Example:	
 	```
-	# python3 solcast_download.py --latitude 41.7287427 --longitude -71.2782335 --startdate '2024-11-07 22:13:40.000Z' --enddate '2024-11-15 02:48:14.000Z' --token foobar
+	# python3 solcast_download.py --latitude="41.7287427" --longitude="-71.2782335" --startdate="2024-11-07 22:13:40.000Z" --enddate="2024-11-15 02:48:14.000Z" --token="foobar"
 	2024-11-07T22:15:00Z,2024-11-07T22:10:00Z,PT5M,0
 	2024-11-07T22:20:00Z,2024-11-07T22:15:00Z,PT5M,0
 	2024-11-07T22:25:00Z,2024-11-07T22:20:00Z,PT5M,0
