@@ -305,9 +305,9 @@ else
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for datum within the gap " 2>&1 | tee -a $log_path
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$new_start_gap\" --enddate=\"$new_end_gap\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
-                python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$new_start_gap" --enddate="$new_end_gap" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
+                python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$new_start_gap" --enddate="$new_end_gap" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap
 		
-		gap_count=$(sed '1d'  data/${node}_${new_start_gap}_${new_end_gap}_datum_gap | wc -l)
+		gap_count=$(sed '1d' data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
 		cat data/${node}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
 		
@@ -475,8 +475,10 @@ else
                         electrical_energy_data_path="${electrical_energy_data_path}.xz"
                         compress="enabled"
                 fi
+
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" --sourceids=\"$sourceids\" --timezone=\"UTC\" --compression=\"$compress\" --filepath=\"$electrical_energy_data_path\" --token=\"$token\" --secret=\"$secret\" in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
 		sleep 5
+		
 
 		jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" --compression="$compress" --filepath="$electrical_energy_data_path" --token="$token" --secret="$secret")	
 
@@ -500,9 +502,9 @@ else
 
 			if [ $gap_count -gt 0 ]; then
 
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${new_start_gap}_${new_end_gap}_datum_gap will be deleted first" 2>&1 | tee -a $log_path
-                        	cat data/${node}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
-				
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Gap data dumped in data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap will be deleted first" 2>&1 | tee -a $log_path
+                                cat data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
+
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node=\"$nodeId\" --sourceids=\"$sourceids\" --localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 				result_count=$(python3 solnet_expire_preview.py --node="$nodeId" --sourceids="$sourceids" --localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret")
 
@@ -529,6 +531,8 @@ else
 					echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
                 		 	sleep 10
 					python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " 2>&1 | tee -a $log_path
+				
 				fi
 
 			else

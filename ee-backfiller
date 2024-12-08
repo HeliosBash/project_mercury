@@ -301,10 +301,10 @@ else
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_seconds/60/60/24)) " 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$new_start_gap\" --enddate=\"$new_end_gap\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
-		python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$new_start_gap" --enddate="$new_end_gap" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
-		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
+		python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$new_start_gap" --enddate="$new_end_gap" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap
+		gap_count=$(sed '1d' data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
-		cat data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap 2>&1 | tee -a $log_path
+		cat data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_datum_gap 2>&1 | tee -a $log_path
 		
 		
 		if [ $gap_count -gt 0 ]; then
