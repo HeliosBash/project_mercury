@@ -291,15 +291,17 @@ else
 
                 	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$before_startdate" --enddate="$startdate" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${before_startdate}_${startdate}_datum
 
+			sed -i '1d' data/${node}_${sourceids}_${before_startdate}_${startdate}_datum
+
                 	if [ -z "$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum)" ] ; then
-                        	start_localdatetime_epoch=$(date -d "$utcstartdate" +%s)
+                        	start_localdatetime_epoch=$(date -d "$localstartdate" +%s)
                         	new_start_localdatetime_epoch=$((start_localdatetime_epoch - 5))
                         	snevent1_start_end_datetime=$(date --date @$new_start_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
                         	start_irradiancehours=0
                 	else
-                        	startlocaldate=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | sed '/Created/d' | tail -n 1 | awk -F ',' '{print $2}' )
-                        	startlocaltime=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | sed '/Created/d' | tail -n 1 | awk -F ',' '{print $3}' )
-                        	start_irradiancehours=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | sed '/Created/d' | tail -n 1| awk -F ',' '{print $NF}')
+                        	startlocaldate=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | tail -n 1 | awk -F ',' '{print $2}' )
+                        	startlocaltime=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | tail -n 1 | awk -F ',' '{print $3}' )
+                        	start_irradiancehours=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | tail -n 1| awk -F ',' '{print $NF}')
                         	start_localdatetime_epoch=$(date -d "$startlocaldate $startlocaltime" +%s)
                         	new_start_localdatetime_epoch=$((start_localdatetime_epoch + 5))
                         	snevent1_start_end_datetime=$(date --date @$new_start_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
@@ -312,15 +314,17 @@ else
 
                 	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$enddate" --enddate="$after_enddate" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${enddate}_${after_enddate}_datum
 
+			sed -i '1d' data/${node}_${sourceids}_${enddate}_${after_enddate}_datum
+
                 	if [ -z "$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum)" ] ; then
-                        	end_localdatetime_epoch=$(date -d "$utcenddate" +%s)
+                        	end_localdatetime_epoch=$(date -d "$localstartdate" +%s)
                         	new_end_localdatetime_epoch=$((end_localdatetime_epoch + 5))
                         	snevent2_start_end_datetime=$(date --date @$new_end_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
                         	end_irradiancehours=0
                 	else
-                        	endlocaldate=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | sed '/Created/d' | head -n 1 | awk -F ',' '{print $2}' )
-                        	endlocaltime=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | sed '/Created/d' | head -n 1 | awk -F ',' '{print $3}' )
-                        	end_irradiancehours=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | sed '/Created/d' | head -n 1| awk -F ',' '{print $NF}')
+                        	endlocaldate=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | head -n 1 | awk -F ',' '{print $2}' )
+                        	endlocaltime=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | head -n 1 | awk -F ',' '{print $3}' )
+                        	end_irradiancehours=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | head -n 1| awk -F ',' '{print $NF}')
                         	end_localdatetime_epoch=$(date -d "$endlocaldate $endlocaltime" +%s)
                         	new_end_localdatetime_epoch=$((end_localdatetime_epoch - 5))
                         	snevent2_start_end_datetime=$(date --date @$new_end_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
