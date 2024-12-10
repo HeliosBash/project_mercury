@@ -283,51 +283,47 @@ else
         		sleep 1
         		xz -k $irradiance_data_path
         		echo "$(date +'%Y-%m-%d %H:%M:%S') Process completed" | tee -a $log_path
-	
+
+			#############################################################################################################################################################
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Determining Stitch Parameters" 2>&1 | tee -a $log_path
                 	
-			before_startdate=$(date --date "$utcstartdate - 1 days"  +'%Y-%m-%d %H:%M:%SZ'  | sed 's/ /T/g;s/:/%3A/g')
-                	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$before_startdate\" --enddate=\"$startdate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\" to determine SN EVENT 1" 2>&1 | tee -a $log_path
+			startdate_1hour_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 1 hour" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
+			startdate_5sec_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
+                	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate_1hour_before\" --enddate=\"$startdate_5sec_before\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\" to determine SN EVENT 1" 2>&1 | tee -a $log_path
 
-                	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$before_startdate" --enddate="$startdate" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${before_startdate}_${startdate}_datum
+			sne1_datum="data/${node}_${sourceids}_${startdate_1hour_before}_${startdate_5sec_before}_datum"
+                	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_1hour_before" --enddate="$startdate_5sec_before" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $sne1_datum
 
-			sed -i '1d' data/${node}_${sourceids}_${before_startdate}_${startdate}_datum
-
-                	if [ -z "$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum)" ] ; then
-                        	start_localdatetime_epoch=$(date -d "$localstartdate" +%s)
-                        	new_start_localdatetime_epoch=$((start_localdatetime_epoch - 5))
-                        	snevent1_start_end_datetime=$(date --date @$new_start_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+			sed -i '1d' $sne1_datum
+				
+                	if [ -z "$(cat $sne1_datum)" ] ; then
+				snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$localstartdate") - 5 seconds" +'%b %d, %Y %H:%M:%S')
                         	start_irradiancehours=0
                 	else
-                        	startlocaldate=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | tail -n 1 | awk -F ',' '{print $2}' )
-                        	startlocaltime=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | tail -n 1 | awk -F ',' '{print $3}' )
-                        	start_irradiancehours=$(cat data/${node}_${sourceids}_${before_startdate}_${startdate}_datum | tail -n 1| awk -F ',' '{print $NF}')
-                        	start_localdatetime_epoch=$(date -d "$startlocaldate $startlocaltime" +%s)
-                        	new_start_localdatetime_epoch=$((start_localdatetime_epoch + 5))
-                        	snevent1_start_end_datetime=$(date --date @$new_start_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
-
+                        	sne1_startlocaldate=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $2}' )
+                        	sne1_startlocaltime=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $3}' )
+                        	start_irradiancehours=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $NF}')
+				snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime") + 5 seconds" +'%b %d, %Y %H:%M:%S')
                 	fi
 
-                	after_enddate=$(date --date "$utcenddate + 1 days"  +'%Y-%m-%d %H:%M:%SZ'  | sed 's/ /T/g;s/:/%3A/g')
+                        startdate_5sec_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
+			startdate_1hour_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 1 hour" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
 
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$enddate\" --enddate=\"$after_enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\" to determine SN EVENT 2" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate_5sec_after\" --enddate=\"$startdate_1hour_after\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\" to determine SN EVENT 2" 2>&1 | tee -a $log_path
+			
+			sne2_datum="data/${node}_${sourceids}_${startdate_5sec_after}_${startdate_1hour_after}_datum"
+                	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_5sec_after" --enddate="$startdate_1hour_after" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $sne2_datum
 
-                	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$enddate" --enddate="$after_enddate" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${enddate}_${after_enddate}_datum
+			sed -i '1d' $sne2_datum
 
-			sed -i '1d' data/${node}_${sourceids}_${enddate}_${after_enddate}_datum
-
-                	if [ -z "$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum)" ] ; then
-                        	end_localdatetime_epoch=$(date -d "$localstartdate" +%s)
-                        	new_end_localdatetime_epoch=$((end_localdatetime_epoch + 5))
-                        	snevent2_start_end_datetime=$(date --date @$new_end_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+			if [ -z "$(cat $sne2_datum)" ] ; then
+				snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$localstartdate") + 5 seconds" +'%b %d, %Y %H:%M:%S')
                         	end_irradiancehours=0
                 	else
-                        	endlocaldate=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | head -n 1 | awk -F ',' '{print $2}' )
-                        	endlocaltime=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | head -n 1 | awk -F ',' '{print $3}' )
-                        	end_irradiancehours=$(cat data/${node}_${sourceids}_${enddate}_${after_enddate}_datum | head -n 1| awk -F ',' '{print $NF}')
-                        	end_localdatetime_epoch=$(date -d "$endlocaldate $endlocaltime" +%s)
-                        	new_end_localdatetime_epoch=$((end_localdatetime_epoch - 5))
-                        	snevent2_start_end_datetime=$(date --date @$new_end_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+                        	sne2_endlocaldate=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $2}' )
+                        	sne2_endlocaltime=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $3}' )
+                        	end_irradiancehours=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $NF}')
+				snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne2_endlocaldate $sne2_endlocaltime") - 5 seconds" +'%b %d, %Y %H:%M:%S')
                 	fi
 
                 	inner_start_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
@@ -348,6 +344,7 @@ else
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_irradiancehours" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_irradiancehours" 2>&1 | tee -a $log_path
 	
+			###############################################################################################################################################################
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" 2>&1 | tee -a $log_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path
                         filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')
