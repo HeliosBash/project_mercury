@@ -102,19 +102,16 @@ else
 
 	# Iterate through the file with PYR data in day aggregates to identify gaps. It compares the local date with a future date that is one day ahead
     	# If it doesn't match then the start of a possible gap is identified 	
-	while IFS=, read createdUTCDate localDate localTime nodeId sourceId irradiance_min irradiance_max irradiance irradianceHours
+	while IFS=, read UTCDateTime localDate localTime nodeId sourceId irradiance_min irradiance_max irradiance irradianceHours
 	do
 		# Determines first row
 		if [[ $first_row_days == 0 ]] ; then
 			first_row_days=1
-			# Assigns a variable for the next day date
-			expected_next=$(date -d "$localDate + 1 day" +%Y-%m-%d)
-			# Saves current iteration of dates as previous dates for next iteration
-			prevlocalDate="$localDate"
-			prevUTCDate="$createdUTCDate"
+			# Next day date that should match the next datum iteration
+			expected_next_localDate=$(date -d "$localDate + 1 day" +%Y-%m-%d)
 		else
 			# Additional checking is needed if date match expected date but data is bad
-                         current_line_number=$(cat -n $day_data_path | grep "$createdUTCDate" | awk '{print $1 }')
+                         current_line_number=$(cat -n $day_data_path | grep "$UTCDateTime" | awk '{print $1 }')
                          next_possible_gap_line_number=$((current_line_number+1))
 
 			 if [[ $next_possible_gap_line_number == $((total_lines+1)) ]] ; then
@@ -122,19 +119,18 @@ else
 				break
                          fi
 
-                         next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
                          next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 8 )
                          next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 9 )
 
 			# Compares next iteration of dates to the expected date which is a day ahead, if it matches then not a start gap date, else a possible start gap date 
-			if [[ "$localDate" != "$expected_next" ]] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]; then
+			if [[ "$localDate" != "$expected_next_localDate" ]] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]; then
 				
 				# Next process show that once a possible start gap date is identified, its not yet definitive that the next date iteration is the end gap date as it could be bad data where irradiance hours is zero or null
 				
 				# Checks current iteration if the irradiance or irradiance hours have empty values, while this is true, it continues to iterate through the data 
 				# and increments the line number of the possible end gap until the datum is valid
 				
-				if [[ "$localDate" != "$expected_next" ]] ; then
+				if [[ "$localDate" != "$expected_next_localDate" ]] ; then
                                         start_gap_line_number=$((current_line_number-1))
                                         next_possible_gap_line_number=$((next_possible_gap_line_number-1))
                                 else
@@ -150,34 +146,27 @@ else
                                 done
 
 				# Once the line number of the end gap is determined, then extract the utc and local dates from the line
-				prevUTCDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
-				createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
-				localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 2 )
+				start_gap_utc_date=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
+				end_gap_utc_date=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | cut -d "," -f 1 )
 				
-				# Assign the start and end gap dates to variables
-				startdate=$(echo $prevUTCDate | awk '{printf $1}')
-                                enddate=$(echo $createdUTCDate | awk '{printf $1}')
-
-
 				# Formats the dates to be used in the next process in determining the gap in data aggregated hourly
-				starthour="${startdate}T00%3A00"
-                                endhour="${enddate}T23%3A59"
+
+                                starthour=$(date --date "$start_gap_utc_date" +'%Y-%m-%dT00:00')
+                                endhour=$(date --date "$end_gap_utc_date" +'%Y-%m-%dT23:59')
 
 				# Used only in the next condition to display the proper output message 
 				gap_in_days=1
 				break
 
 			else
-				prevUTCDate="$createdUTCDate"
-				prevlocalDate="$localDate"
-				expected_next=$(date -d "$localDate + 1 day" +%Y-%m-%d)
+				expected_next_localDate=$(date -d "$localDate + 1 day" +%Y-%m-%d)
 			fi
 		fi
 	done < $day_data_path
 
 	if [ $gap_in_days -eq 1 ] ; then
 		# Date of startdate and enddate values have been updated
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Found between $startdate and $enddate" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Found between $starthour and $endhour" 2>&1 | tee -a $log_path
 	else
 		# Date of startdate and enddate is the provided value
 		echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Days" 2>&1 | tee -a $log_path
@@ -219,7 +208,6 @@ else
                                 break
                         fi
 
-                        next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 2 )
                         next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 8 )
                         next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 9 )
 			
@@ -264,7 +252,6 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Hours" 2>&1 | tee -a $log_path
 	fi
 
-	
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
@@ -296,7 +283,6 @@ else
                                 break
                         fi
 			
-                        next_localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
                         next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-1)}' )
                         next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
 
@@ -358,18 +344,15 @@ else
                 echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap IrradianceHours: $end_gap_irradiancehours" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 4*************" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for data between the gap. Adding 5 second offset" 2>&1 | tee -a $log_path
+		
 		start_gap_epoch=$(date -d "$start_gap" +%s)
 		end_gap_epoch=$(date -d "$end_gap" +%s)
-		start_gap_localdatetime_epoch=$(date -d "$start_gap_localdatetime" +%s)
-		end_gap_localdatetime_epoch=$(date -d "$end_gap_localdatetime" +%s)
-                new_start_gap_epoch=$((start_gap_epoch + 5))
-		new_start_gap_localdatetime_epoch=$((start_gap_localdatetime_epoch + 5))
-                new_end_gap_epoch=$((end_gap_epoch - 5))
-		new_end_gap_localdatetime_epoch=$((end_gap_localdatetime_epoch - 5))
-		new_start_gap=$(date --date @$new_start_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
-		new_start_gap_local=$(date --date @$new_start_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
-		new_end_gap=$(date --date @$new_end_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
-		new_end_gap_local=$(date --date @$new_end_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
+                
+		new_start_gap=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+		new_start_gap_local=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+		new_end_gap=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+                new_end_gap_local=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+
 		gap_num_seconds=$((end_gap_epoch - start_gap_epoch))
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in UTC: $new_start_gap" 2>&1 | tee -a $log_path
@@ -444,9 +427,9 @@ else
 		# File where the result of the python commands to download solcast data will be stored.
 		solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
 		>$solcast_script_path
-
-		solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d %H:%M:%SZ')
-                solcast_end=$(date --date @$new_end_gap_epoch +'%Y-%m-%d %H:%M:%SZ')
+		
+		solcast_start=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' )
+                solcast_end=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ'  )
 
 		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.
 		if [ $gap_num_seconds -gt 2606399 ]; then
@@ -517,11 +500,7 @@ else
 
                         if [[ "${computeirradiance_continue_result^^}" == "Y" ]] ; then
 
-				startperiod=$(echo $new_start_gap | sed "s/T/ /g;s/%3A/:/g")
-				endperiod=$(echo $new_end_gap | sed "s/T/ /g;s/%3A/:/g")
 				runtime=$(date +"%Y%m%d_%H%M%S")
-				startperiodepoch=$(date -d "$startperiod" +%s)
-				endperiodepoch=$(date -d "$endperiod" +%s)
 				a=0
 
 				irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
@@ -554,8 +533,9 @@ else
                                 head -n 5 $irradiance_data_path | tee -a $log_path
                                 echo "....." | tee -a $log_path
 				tail -n 5 $irradiance_data_path | tee -a $log_path
-				snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
-				snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
+				
+				snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" +'%b %d, %Y %H:%M:%S' )
+                		snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%b %d, %Y %H:%M:%S' )
 				inner_start_gap_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
 				inner_end_gap_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Fill for PYR Gap" | tee -a $log_path
