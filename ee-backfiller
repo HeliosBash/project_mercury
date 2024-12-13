@@ -269,25 +269,20 @@ do
 				start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
                                 end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
 
-                                start_gap_utc_datetime_halfsec=$(echo $start_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
-                                end_gap_utc_datetime_halfsec=$(echo $end_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
+                                start_gap_halfsec=$(echo $start_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
+                                end_gap_halfsec=$(echo $end_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
 
-                                start_gap_localDate=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
-                                start_gap_localTime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
+				start_gap_localdatetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${start_gap_halfsec}/g")
+                                end_gap_localdatetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${end_gap_halfsec}/g")
+
                                 start_gap_watthours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
-
-                                end_gap_localDate=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2 )
-                                end_gap_localTime=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 3 )
                                 end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
 
-                                datetime=$(echo $createdUTCDate | sed "s/Z//g")
                                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_utc_datetime and $end_gap_utc_datetime" 2>&1 | tee -a $log_path
-                                echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localDate $start_gap_localTime:$start_gap_utc_datetime_halfsec and $end_gap_localDate $end_gap_localTime:$end_gap_utc_datetime_halfsec" 2>&1 | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localdatetime and $end_gap_localdatetime" 2>&1 | tee -a $log_path
 
                                 start_gap=$start_gap_utc_datetime
                                 end_gap=$end_gap_utc_datetime
-                                start_gap_localdatetime="$start_gap_localDate $start_gap_localTime:$start_gap_utc_datetime_halfsec"
-                                end_gap_localdatetime="$end_gap_localDate $end_gap_localTime:$end_gap_utc_datetime_halfsec"
                                 gap_in_minutes=1
                                 break
                         else
@@ -309,18 +304,15 @@ do
                 echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap wattHours: $end_gap_watthours" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 4*************" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for data between the gap. Adding 5 second offset" 2>&1 | tee -a $log_path
+		
 		start_gap_epoch=$(date -d "$start_gap" +%s)
 		end_gap_epoch=$(date -d "$end_gap" +%s)
-		start_gap_localdatetime_epoch=$(date -d "$start_gap_localdatetime" +%s)
-		end_gap_localdatetime_epoch=$(date -d "$end_gap_localdatetime" +%s)
-                new_start_gap_epoch=$((start_gap_epoch + 5))
-		new_start_gap_localdatetime_epoch=$((start_gap_localdatetime_epoch + 5))
-                new_end_gap_epoch=$((end_gap_epoch - 5))
-		new_end_gap_localdatetime_epoch=$((end_gap_localdatetime_epoch - 5))
-		new_start_gap=$(date --date @$new_start_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
-		new_start_gap_local=$(date --date @$new_start_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
-		new_end_gap=$(date --date @$new_end_gap_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
-		new_end_gap_local=$(date --date @$new_end_gap_localdatetime_epoch +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g")
+		
+		new_start_gap=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+                new_start_gap_local=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+                new_end_gap=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+                new_end_gap_local=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+		
 		gap_num_seconds=$((end_gap_epoch - start_gap_epoch))
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') New Start Gap in UTC: $new_start_gap" 2>&1 | tee -a $log_path
@@ -391,8 +383,9 @@ do
 		>$solcast_script_path
 		
 		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.
-		solcast_start=$(date --date @$new_start_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
-                solcast_end=$(date --date @$new_end_gap_epoch +'%Y-%m-%d %H:%M:%SZ' )
+		solcast_start=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' )
+                solcast_end=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ'  )
+
 
 		if [ $gap_num_seconds -gt 2606399 ]; then
 			
@@ -521,9 +514,9 @@ do
 		echo "....." | tee -a $log_path
 		tail -n 5 $electrical_energy_data_path | tee -a $log_path
 
-        	snevent1_start_end_datetime=$(date --date @$new_start_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
-                snevent2_start_end_datetime=$(date --date @$new_end_gap_localdatetime_epoch +'%b %d, %Y %H:%M:%S')
-                inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
+                snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" +'%b %d, %Y %H:%M:%S' )
+                snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%b %d, %Y %H:%M:%S' )
+		inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
                 inner_end_gap_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
