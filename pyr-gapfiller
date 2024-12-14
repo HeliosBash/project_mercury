@@ -69,8 +69,8 @@ else
 	log_path="logs/pyr-gapfiller.log"
 	maxoutput=1000000
 	
-	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py "
-	echo -n "--node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" "
+	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py " 2>&1 | tee -a $log_path
+	echo -n "--node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" " 2>&1 | tee -a $log_path
         echo    "--aggregate=\"Month\" --maxoutput=\"1000000\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 	test_params=$(python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" \
 		--enddate="$enddate" --aggregate="Month" --maxoutput="1000000" --token="$token" --secret="$secret")
@@ -78,10 +78,10 @@ else
 	echo "$(date +'%Y-%m-%d %H:%M:%S') $test_params" 2>&1 | tee -a $log_path
 	
 	if [[ "$test_params" == *"Error"* ]] ; then
-		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Usage: pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i "
-		echo -n "[SOURCE IDS] --startdate|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddate|-e [END DATETIME in "
-		echo -n "\"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] "
-		echo 	"--token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" 2>&1 | tee -a $log_path
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Usage: pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i " 2>&1 | tee -a $log_path
+		echo -n "[SOURCE IDS] --startdate|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddate|-e [END DATETIME in " 2>&1 | tee -a $log_path
+		echo -n "\"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] " 2>&1 | tee -a $log_path
+		echo 	"--api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" 2>&1 | tee -a $log_path
 	else
 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash pyr-gapfiller --node $node --sourceid $sid "
 		echo -n "--startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long "
@@ -90,9 +90,9 @@ else
 		# Process 1 extracts Solnet PYR data in day aggregates
 		echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
-		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" "
-	        echo -n "--startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"Day\" --maxoutput=\"$maxoutput\" " 
-		echo    "--token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py --node=\"$node\" " 2>&1 | tee -a $log_path
+	        echo -n "--sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"Day\" " 2>&1 | tee -a $log_path
+		echo    "--maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 		
 		# Initialization of variables       
 		first_row_days=0
@@ -200,13 +200,16 @@ else
 		
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 2*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Hours $starthour and $endhour" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$starthour\" --enddate=\"$endhour\" --aggregate=\"Hour\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
+	echo -n "--startdate=\"$starthour\" --enddate=\"$endhour\" --aggregate=\"Hour\" --maxoutput=\"$maxoutput\" " 2>&1 | tee -a $log_path
+	echo    "--token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 
 	first_row_hours=0
 	gap_in_hours=0
 	hour_data_path="data/${node}_${sourceids}_${starthour}_${endhour}_datum_hours"
 
-	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$starthour" --enddate="$endhour" --aggregate="Hour" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $hour_data_path
+	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$starthour" \
+		--enddate="$endhour" --aggregate="Hour" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $hour_data_path
 	sed -i '1d' $hour_data_path
 	sleep 1
 
@@ -245,15 +248,20 @@ else
 				while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]
                                 do
                                         next_possible_gap_line_number=$((next_possible_gap_line_number+1))
-                                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 8 )
-                                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 9 )
+                                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
+						$hour_data_path | cut -d "," -f 8 )
+                                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
+						$hour_data_path | cut -d "," -f 9 )
                                 done
 
 				start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
-				start_gap_utc_datetime_hour_before=$(date --date "$(date -Iseconds -d "$start_gap_utc_datetime") - 1 hour" +'%Y-%m-%d %H:00')
+				start_gap_utc_datetime_hour_before=$(date --date "$(date -Iseconds -d "$start_gap_utc_datetime") - 1 hour" \
+					+'%Y-%m-%d %H:00')
                                 
-			        end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
-				end_gap_utc_datetime_hour_after=$(date --date "$(date -Iseconds -d "$end_gap_utc_datetime") + 1 hour" +'%Y-%m-%d %H:00')
+			        end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
+					$hour_data_path | cut -d "," -f 1 )
+				end_gap_utc_datetime_hour_after=$(date --date "$(date -Iseconds -d "$end_gap_utc_datetime") + 1 hour" \
+					+'%Y-%m-%d %H:00')
 
 				startdate=$(echo $start_gap_utc_datetime_hour_before | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
         			enddate=$(echo $end_gap_utc_datetime_hour_after | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
@@ -275,12 +283,15 @@ else
 
 	echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" 2>&1 | tee -a $log_path
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
+	echo -n "--startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " 2>&1 | tee -a $log_path
+	echo    "--token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 	first_row_minutes=0
 	gap_in_minutes=0
 	minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
 	
-	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $minute_data_path
+	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" \
+		--aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $minute_data_path
 	sed -i '1d' $minute_data_path
 	sleep 1
 	
@@ -304,8 +315,10 @@ else
                                 break
                         fi
 			
-                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-1)}' )
-                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+                        next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+				awk -F "," '{print $(NF-1)}' )
+                        next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+				awk -F "," '{print $NF}' )
 
 			if [ $utc_datetime_difference -gt 3601 ] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] ; then
 				
@@ -319,24 +332,34 @@ else
                                 while [[  -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]]
                                 do
                                       next_possible_gap_line_number=$((next_possible_gap_line_number+1))
-                                      next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $(NF-1)}' )
-                                      next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," '{print $NF}' )
+                                      next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					      awk -F "," '{print $(NF-1)}' )
+                                      next_irradianceHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					      awk -F "," '{print $NF}' )
                                 done
 
-				start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
-				end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 1 )
+				start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					cut -d "," -f 1 )
+				end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					cut -d "," -f 1 )
 				
 				start_gap_halfsec=$(echo $start_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
 				end_gap_halfsec=$(echo $end_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')	
 
-				start_gap_localdatetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${start_gap_halfsec}/g")
-                                end_gap_localdatetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${end_gap_halfsec}/g")
+				start_gap_localdatetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${start_gap_halfsec}/g")
+                                end_gap_localdatetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${end_gap_halfsec}/g")
 
-				start_gap_irradiancehours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
-				end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 7 )
+				start_gap_irradiancehours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					cut -d "," -f 7 )
+				end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+					cut -d "," -f 7 )
                         
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_utc_datetime and $end_gap_utc_datetime" 2>&1 | tee -a $log_path
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localdatetime and $end_gap_localdatetime" 2>&1 | tee -a $log_path
+                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_utc_datetime and " 2>&1 | tee -a $log_path
+				echo "$end_gap_utc_datetime" 2>&1 | tee -a $log_path
+                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localdatetime and " 2>&1 | tee -a $log_path
+				echo "$end_gap_localdatetime" 2>&1 | tee -a $log_path
 					
 				start_gap=$start_gap_utc_datetime
 				end_gap=$end_gap_utc_datetime
@@ -377,9 +400,14 @@ else
                 echo "$(date +'%Y-%m-%d %H:%M:%S') New End Gap in Local Datetime: $new_end_gap_local" 2>&1 | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Num of Days: $((gap_num_seconds/60/60/24)) " 2>&1 | tee -a $log_path
 		
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$new_start_gap\" --enddate=\"$new_end_gap\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" " 2>&1 | tee -a $log_path
+		echo -n "--sourceids=\"$sourceids\" --startdate=\"$new_start_gap\" --enddate=\"$new_end_gap\" " 2>&1 | tee -a $log_path
+		echo 	"--aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
 		
-		python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$new_start_gap" --enddate="$new_end_gap" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
+		python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$new_start_gap" --enddate="$new_end_gap" \
+			--aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > \
+			data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap
+		
 		gap_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap | wc -l)
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Gap Datum Count: $gap_count" 2>&1 | tee -a $log_path
 		cat data/${node}_${sourceids}_${startdate}_${enddate}_datum_gap 2>&1 | tee -a $log_path
@@ -390,9 +418,14 @@ else
 
                         while true
                         do
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Preview and Confirm commands below will be executed:" 2>&1 | tee -a $log_path
-				echo "Preview: python3 solnet_expire_preview.py --node=\"$nodeId\" --sourceids=\"$sourceids\" --localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
-                                echo "Confirm: python3 solnet_expire_confirm.py --node=\"$nodeId\" --sourceids=\"$sourceids\" --localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. " 2>&1 | tee -a $log_path
+				echo "Preview and Confim commands below will be executed:" 2>&1 | tee -a $log_path
+				echo -n "Preview: python3 solnet_expire_preview.py --node=\"$nodeId\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
+				echo -n "--localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" " 2>&1 | tee -a $log_path
+				echo    "--token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path 
+                                echo -n "Confirm: python3 solnet_expire_confirm.py --node=\"$nodeId\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
+			       	echo -n "--localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" " 2>&1 | tee -a $log_path
+				echo	"--token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
                                 
 				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to remove the data between the gap now (Y/N)?" 2>&1 | tee -a $log_path
                                 read continue_result < /dev/tty
@@ -407,23 +440,32 @@ else
 
                         if [[ "${continue_result^^}" == "Y" ]] ; then
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node=\"$nodeId\" --sourceids=\"$sourceids\" --localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py " 2>&1 | tee -a $log_path
+                                echo -n "--node=\"$nodeId\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
+                                echo -n "--localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" " 2>&1 | tee -a $log_path
+                                echo    "--token=\"$token\" --secret=\"$secret\" in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
 
-				result_count=$(python3 solnet_expire_preview.py --node="$nodeId" --sourceids="$sourceids" --localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret")
+				result_count=$(python3 solnet_expire_preview.py --node="$nodeId" --sourceids="$sourceids" \
+					--localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret")
 
 				echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path
 
 				if [ $result_count -ne $gap_count ] ; then
 
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Process. Count doesn't match, adjust date and run manually" 2>&1 | tee -a $log_path
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Count doesn't match, adjust date and run manually" 2>&1 | tee -a $log_path
 
 				else
 					echo "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of data in gap."
 
-
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node=\"$nodeId\" --sourceids=\"$sourceids\" --localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" --token=\"$token\" --secret=\"$secret\" in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py " 2>&1 | tee -a $log_path
+                                	echo -n "--node=\"$nodeId\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
+                               		echo -n "--localstartdate=\"$new_start_gap_local\" --localenddate=\"$new_end_gap_local\" " 2>&1 | tee -a $log_path
+					echo 	"--token=\"$token\" --secret=\"$secret\" in 10 seconds. Hit CTRL + C to Cancel" 2>&1 | tee -a $log_path
+					
 					sleep 10	
-					python3 solnet_expire_confirm.py --node="$nodeId" --sourceids="$sourceids" --localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" --token="$token" --secret="$secret" 2>&1 | tee -a $log_path
+					python3 solnet_expire_confirm.py --node="$nodeId" --sourceids="$sourceids" \
+						--localstartdate="$new_start_gap_local" --localenddate="$new_end_gap_local" \
+						--token="$token" --secret="$secret" 2>&1 | tee -a $log_path
 				fi	
 
                         else
@@ -447,13 +489,17 @@ else
 		solcast_start=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' )
                 solcast_end=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ'  )
 
-		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.
+		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days 
+		# since there is a 30 day limit on date range per solcast download.
 		if [ $gap_num_seconds -gt 2606399 ]; then
 			
 			solcast_partial=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d 23:59:59Z')
 
-			echo "python3 solcast_download.py --latitude="$lat" --longitude="$long" --startdate="$solcast_start" --enddate="$solcast_partial" --token="$solcast_api_token" > $solcast_csv_path" | tee -a $solcast_script_path
-			
+
+			echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+			echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_partial\" " | tee -a $solcast_script_path
+			echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
+
 			solcast_num_seconds=$gap_num_seconds
 
 			while [ $solcast_num_seconds -gt 2606399 ]
@@ -465,14 +511,24 @@ else
 				solcast_num_seconds=$((solcast_end_epoch - solcast_partial_epoch))
 				if [ $solcast_num_seconds -gt 2606399 ]; then
 					solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59Z' )
-					echo "python3 solcast_download.py --latitude="$lat" --longitude="$long" --startdate="$prev_solcast_partial" --enddate="$solcast_partial" --token="$solcast_api_token" >> $solcast_csv_path" | tee -a $solcast_script_path
+				
+					echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+					echo -n "--startdate=\"$prev_solcast_partial\" --enddate=\"$solcast_partial\" " | tee -a $solcast_script_path
+					echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
+
 				else
-					echo "python3 solcast_download.py --latitude="$lat" --longitude="$long" --startdate="$prev_solcast_partial" --enddate="$solcast_end" --token="$solcast_api_token" >> $solcast_csv_path" | tee -a $solcast_script_path
+					echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+                                        echo -n "--startdate=\"$prev_solcast_partial\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
+                                        echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
+
 					break
 				fi
 			done
 		else
-			echo "python3 solcast_download.py --latitude="$lat" --longitude="$long" --startdate="$solcast_start" --enddate="$solcast_end" --token="$solcast_api_token" > $solcast_csv_path" | tee -a $solcast_script_path
+			echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+                        echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
+                        echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
+
 		fi
 
 			while true
@@ -490,7 +546,8 @@ else
 
                         if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path " | tee -a $log_path
+				echo    "in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
 				sleep 10
 				/bin/bash $solcast_script_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Process 5 Completed" | tee -a $log_path
@@ -523,7 +580,9 @@ else
 				startdate=$(cat $solcast_csv_path | head -n 1 | cut -d , -f 2)
 				enddate=$(cat $solcast_csv_path | tail -n 1 | cut -d , -f 2)
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and source $sid from $startdate to $enddate" | tee -a $log_path
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Calculating irradiance hours for node $node and " | tee -a $log_path
+				echo "source $sid from $startdate to $enddate" | tee -a $log_path
+
 				while IFS=, read periodend periodstart period ghi
 				do
 
@@ -550,8 +609,10 @@ else
                                 echo "....." | tee -a $log_path
 				tail -n 5 $irradiance_data_path | tee -a $log_path
 				
-				snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" +'%b %d, %Y %H:%M:%S' )
-                		snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%b %d, %Y %H:%M:%S' )
+				snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" \
+					+'%b %d, %Y %H:%M:%S' )
+                		snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" \
+					+'%b %d, %Y %H:%M:%S' )
 				inner_start_gap_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
 				inner_end_gap_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Fill for PYR Gap" | tee -a $log_path
@@ -589,7 +650,9 @@ else
                                 	compress="enabled"
                         	fi
 
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" --sourceids=\"$sourceids\" --timezone=\"UTC\" --compression=\"$compress\" --filepath=\"$irradiance_data_path\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" " | tee -a $log_path
+				echo -n "--sourceids=\"$sourceids\" --timezone=\"UTC\" --compression=\"$compress\" " | tee -a $log_path
+			        echo	"--filepath=\"$irradiance_data_path\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 				while true
                         	do
                         		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
@@ -605,11 +668,18 @@ else
 				
 					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
                                 	sleep 10
+					jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" \
+						--compression="$compress" --filepath="$irradiance_data_path" --token="$token" --secret="$secret")
+                     			
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py " | tee -a $log_path
+					echo -n "--job=\"import\" --action=\"preview\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
+					echo  "--jobid=\"$jobid\" to preview imported data" | tee -a $log_path
+                        		python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" \
+						--jobid="$jobid" 2>&1 | tee -a $log_path
 					
-					jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" --compression="$compress" --filepath="$irradiance_data_path" --token="$token" --secret="$secret")
-                     			echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"preview\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" to preview imported data" | tee -a $log_path
-                        		python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
-					echo  "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" will be executed" | tee -a $log_path
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py " | tee -a $log_path
+					echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
+					echo "--jobid=\"$jobid\" will be executed" | tee -a $log_path
 					
 					while true
 					do
@@ -622,13 +692,20 @@ else
                         			fi
 					done
 					if [[ "${confirm_result^^}" == "Y" ]] ; then
-						echo  "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py " | tee -a $log_path
+						echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
+						echo    "--jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
 		                                sleep 10
-						python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+						python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" \
+							--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
                      			else
-						echo  "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. Deleting Staged Data. Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"delete\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. " | tee -a $log_path
+						echo -n "Deleting Staged Data. Executing python3 solnet_manage_jobs.py " | tee -a $log_path
+						echo -n "--job=\"import\" --action=\"delete\" --token=\"$token\" " | tee -a $log_path
+						echo    "--secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
                                 		sleep 10
-						python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+						python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" \
+							--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
                      			fi
 				else
 					echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Completed" 2>&1 | tee -a $log_path
