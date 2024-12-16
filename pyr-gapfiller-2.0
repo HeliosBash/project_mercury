@@ -1,58 +1,59 @@
 #!/bin/bash
 
 while [ $# -gt 0 ] ; do
-  case "$1" in
-    --node*|-n*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    node="${1#*=}"
-	    ;;
-    --sourceid*|-i*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    sid="${1#*=}"	
-	    ;;
-    --startdatetime*|-s*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    startdatetime="${1#*=}"
-	    ;;
-    --enddatetime*|-e*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    enddatetime="${1#*=}"
-	    ;;
-    --latitude*|-a*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    lat="${1#*=}"
-	    ;;
-    --longitude*|-o*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    long="${1#*=}"
-	    ;;
-    --api*|-p*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    solcast_api_token="${1#*=}"
-	    ;;
-    --token*|-k*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    token="${1#*=}"
-	    ;;
-    --secret*|-c*)
-	    if [[ "$1" != *=* ]]; then shift; fi
-	    secret="${1#*=}"
-	    ;;
-    --help|-h)
-	    echo -n "Usage: pyr-gapfiller-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] "
-	    echo -n "--startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddate|-e [ENDDATETIME in \"YYYY-MM-DD HH:MM\"] "
-	    echo -n "--latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] "
-	    echo    "--secret|-c [SOLNET SECRET]"
-	    exit 0
-	    ;;
-    *)
-	    >&2 echo -n "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude "
-	    echo "--longitude --api --token --secret \n"
-	    exit 1
-	    ;;
-  esac
-  shift
+        case "$1" in
+            --node*|-n*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    node="${1#*=}"
+                    ;;
+            --sourceid*|-i*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    sid="${1#*=}"
+                    ;;
+            --startdatetime*|-s*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    startdatetime="${1#*=}"
+                    ;;
+            --enddatetime*|-e*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    enddatetime="${1#*=}"
+                    ;;
+            --latitude*|-a*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    lat="${1#*=}"
+                    ;;
+            --longitude*|-o*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    long="${1#*=}"
+                    ;;
+            --api*|-p*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    solcast_api_token="${1#*=}"
+                    ;;
+            --token*|-k*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    token="${1#*=}"
+                    ;;
+            --secret*|-c*)
+                    if [[ "$1" != *=* ]]; then shift; fi
+                    secret="${1#*=}"
+                    ;;
+            --help|-h)
+                    echo -n "Usage: pyr-gapfiller-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE IDS] "
+                    echo -n "--startdate|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddate|-e [END DATETIME in \"YYYY-MM-DD HH:MM\"] "
+                    echo -n "--latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] "
+                    echo    "--secret|-c [SOLNET SECRET]"
+                    exit 0
+                    ;;
+            *)
+                    >&2 echo -n "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude "
+                    echo "--longitude --api --token --secret"
+                    exit 1
+                    ;;
+    esac
+    shift
 done
+
 
 if 	[[ -z "$node" || -z "$sid" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || \
 	-z "$long" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]]

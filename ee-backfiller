@@ -52,7 +52,7 @@ while [ $# -gt 0 ] ; do
 		    exit 1
 		    ;;
     esac
-  shift
+    shift
 done
 
 if [[ -z "$node" || -z "$sid" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" \
@@ -735,7 +735,7 @@ else
 							--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 					fi
 				else
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Process Aborted" 2>&1 | tee -a $log_path
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Aborted" 2>&1 | tee -a $log_path
 				fi
 			else
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Process 6 Aborted" | tee -a $log_path
