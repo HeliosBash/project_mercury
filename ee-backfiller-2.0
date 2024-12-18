@@ -189,6 +189,9 @@ else
 
 		sed -i '1d' $hour_data_path
 		sleep 1
+
+		total_lines=$(cat $hour_data_path | wc -l)
+
 		while IFS=, read createdUTCDate localDate localTime nodeId sourceId watts_min watts_max \
 			current_min current_max voltage_min voltage_max frequency_min frequency_max powerFactor_min \
 			powerFactor_max apparentPower_min apparentPower_max reactivePower_min reactivePower_max lineVoltage_min \
@@ -197,71 +200,70 @@ else
 			voltage_ab_max voltage_bc_min voltage_bc_max voltage_ca_min voltage_ca_max watts current voltage \
 			frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a \
 			voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
-		do
-			if [[ $first_row_hours == 0 ]] ; then
-				first_row_hours=1
-				datetime="$localDate $localTime"
-				datetime_epoch=$(date -d "$datetime" +%s)
-				newhour=$((datetime_epoch + 3600))
-				expected_next_hour=$(date --date @$newhour +"%Y-%m-%d %H:00")
-			
-				prevUTCDate=$createdUTCDate
-				prevlocalDate="$localDate"
-				prevlocalTime="$localTime"
-				prevdatetime=$datetime 
-			else
-
-				datetime="$localDate $localTime"
-				if [[ "$datetime" != "$expected_next_hour" ]] ; then
-					
-					start_gap_line_number=$(cat -n $hour_data_path | grep "$localDate,$localTime" | awk '{print $1 }')
-					next_possible_gap_line_number=$((start_gap_line_number+1))
-					while [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
-					do
-						wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
-							$hour_data_path | awk -F "," '{print $(NF-2)}')
-						next_possible_gap_line_number=$((next_possible_gap_line_number+1))
-					done
-					createdUTCDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
-					localDate=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 2 )
-					localTime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 3 )
-					
-					datetime="$localDate $localTime"
-				
-					prevUTCDate_epoch=$(date -d "$prevUTCDate" +%s)
-					hourbefore=$((prevUTCDate_epoch-3600))
-					prev_hour=$(date --date @$hourbefore +"%Y-%m-%d %H:00")
-
-					createdUTCDate_epoch=$(date -d "$createdUTCDate" +%s)
-					hourafter=$((createdUTCDate_epoch+3600))
-					next_hour=$(date --date @$hourafter +"%Y-%m-%d %H:00")
-
-					startdate=$(echo $prev_hour | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
-					enddate=$(echo $next_hour | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
-
-					gap_in_hours=1
-					break
+			do
+				if [[ $first_row_hours == 0 ]] ; then
+					first_row_hours=1
+					expected_next_hour=$(date --date "$(date -Iseconds -d "$localDate $localTime") + 1 hour" \
+						+'%Y-%m-%d %H:00')
+										
 				else
-					datetime_epoch=$(date -d "$datetime" +%s)
-					newhour=$((datetime_epoch + 3600))
-					expected_next_hour=$(date --date @$newhour +"%Y-%m-%d %H:00")
-			
-					prevUTCDate=$createdUTCDate
-					prevlocalDate=$localDate
-					prevlocalTime=$localTime
-					prevdatetime=$datetime
-			
-				fi
-			fi
+					localDateTime="$localDate $localTime"
+					current_line_number=$(cat -n $hour_data_path | grep "$UTCDateTime" | awk '{print $1 }')
+                                        next_possible_gap_line_number=$((current_line_number+1))
+                                        if [[ $next_possible_gap_line_number == $((total_lines+1)) ]]
+                                        then
+                                                gap_in_hours=0
+                                                break
+                                        fi
+
+                                        wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
+                                                $hour_data_path | awk -F "," '{print $(NF-2)}')
+
+                                        if [[ "$localDateTime" != "$expected_next_hour" ]] || [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
+                                        then
+                                                if [[ "$localDateTime" != "$expected_next_hour" ]]
+                                                then
+                                                        start_gap_line_number=$((current_line_number-1))
+                                                        next_possible_gap_line_number=$((next_possible_gap_line_number-1))
+                                                else
+                                                        start_gap_line_number=$current_line_number
+                                                fi
+
+                                                while [[ $wattHours == 0 ]] || [[ -z "$wattHours" ]]
+                                                do
+                                                        next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+                                                        wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
+                                                                $hour_data_path | awk -F "," '{print $(NF-2)}')
+                                                done
+
+                                                start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' \
+                                                        $hour_data_path | cut -d "," -f 1 )
+                                                start_gap_utc_datetime_hour_before=$(date --date "$(date -Iseconds -d \
+                                                        "$start_gap_utc_datetime") - 1 hour" +'%Y-%m-%d %H:00')
+
+                                                end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" \
+                                                        '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
+
+                                                end_gap_utc_datetime_hour_after=$(date --date "$(date -Iseconds -d \
+                                                        "$end_gap_utc_datetime") + 1 hour" +'%Y-%m-%d %H:00')
+
+                                                startdate=$(echo $start_gap_utc_datetime_hour_before | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
+                                                enddate=$(echo $end_gap_utc_datetime_hour_after | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
+                                                gap_in_hours=1
+                                                break
+                                        else
+                                                expected_next_hour=$(date --date "$(date -Iseconds -d "$localDate $localTime") + 1 hour" \
+                                                        +'%Y-%m-%d %H:00')
+                                        fi
+                                fi
 		done < $hour_data_path
 		
 		if [ $gap_in_hours -eq 1 ] ; then
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Gaps Found between $prevUTCDate and $createdUTCDate" | tee -a $log_path
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Added 1 hour offset for next process. Start: $startdate End: $enddate " | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Gaps Found between $start_gap_utc_datetime and $end_gap_utc_datetime" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Added 1 hour offset for next process. Start: $startdate End: $enddate " 2>&1 | tee -a $log_path
 		else
-			echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Hours" | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Hours" 2>&1 | tee -a $log_path
 		fi
-
 		
 		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 3*************" 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps in datum with aggregation in Minutes bettwen $startdate and $enddate" | tee -a $log_path
@@ -458,24 +460,15 @@ else
 			echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
 
-
-			startperiod=$(echo $new_start_gap | sed "s/T/ /g;s/%3A/:/g")
-			endperiod=$(echo $new_end_gap | sed "s/T/ /g;s/%3A/:/g")
-			runtime=$(date +"%Y%m%d_%H%M%S")
-			startperiodepoch=$(date -d "$startperiod" +%s)
-			endperiodepoch=$(date -d "$endperiod" +%s)
-			
-			startdate=$(cat $solcast_csv_path | head -n 1 | cut -d , -f 2)
-			enddate=$(cat $solcast_csv_path | tail -n 1 | cut -d , -f 2)
-
 			a=0
+			runtime=$(date +"%Y%m%d_%H%M%S")
 			irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
 			
 			# For BackFill computation
 			ghitotal=0
 			electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
 
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from $startdate to $enddate" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from ${new_start_gap} to ${new_end_gap}" 2>&1 | tee -a $log_path
 			while IFS=, read periodend periodstart period ghi
 			do
 				periodstart_formatted=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
