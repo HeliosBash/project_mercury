@@ -555,11 +555,8 @@ else
 				echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
 				
-				runtime=$(date +"%Y%m%d_%H%M%S")
-				startdate=$(cat $solcast_csv_path | head -n 1 | cut -d , -f 2)
-				enddate=$(cat $solcast_csv_path | tail -n 1 | cut -d , -f 2)
-				
 				a=0
+				runtime=$(date +"%Y%m%d_%H%M%S")
 				irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
 				
 				# For BackFill computation
@@ -567,7 +564,7 @@ else
 				ghitotal=0
 				electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
 				
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from $startdate to $enddate" | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from ${new_start_gap} to ${new_end_gap}" | tee -a $log_path
 				while IFS=, read periodend periodstart period ghi
 				do
 					periodstart_formatted=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")

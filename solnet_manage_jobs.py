@@ -64,7 +64,7 @@ def main():
     parser.add_argument("--action", choices=["list", "view", "preview", "delete", "confirm"], help="Action to perform")
     parser.add_argument("--token", required=True, help="API Token")
     parser.add_argument("--secret", required=True, help="API Secret")
-    parser.add_argument("--jobid", required=True, help="Job ID (required for certain actions)")
+    parser.add_argument("--jobid", help="Job ID (required for certain actions)")
     
     args = parser.parse_args()
     if args.job == "expire" and args.action == "list":
