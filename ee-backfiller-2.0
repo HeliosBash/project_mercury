@@ -458,61 +458,21 @@ else
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Process 5 Completed" | tee -a $log_path
 
 			echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Generating Backfill Data" 2>&1 | tee -a $log_path
 
 			a=0
 			runtime=$(date +"%Y%m%d_%H%M%S")
-			irradiance_data_path="data/${node}_${sourceids}_${new_start_gap}_${new_end_gap}_PYRGAP_SolNetIMport_${runtime}.csv"
-			
-			# For BackFill computation
-			ghitotal=0
 			electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
-
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating total irradiance hours from ${new_start_gap} to ${new_end_gap}" 2>&1 | tee -a $log_path
-			while IFS=, read periodend periodstart period ghi
-			do
-				periodstart_formatted=$(echo $periodstart | sed "s/T/ /g" | sed "s/Z//g")
-				
-				# First condition is used to identify the first record where accumulating irradiance hours 
-				# is just equal to the instantaneuous irradiance
-				
-				if [[ $a = 0 ]] ; then
-					echo "node,source,date,irradiance,irradianceHours" > $irradiance_data_path
-					echo "$node,$sid,$periodstart_formatted,$ghi,$ghi" >> $irradiance_data_path
-					ghi_prev=$ghi
-					a=1
-					ghitotal=$((ghi+ghitotal))
-					echo $periodstart_formatted,$ghi,$ghi > data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
-				else
-					# Adds a 12th of an irradiance hour based on the instantaneous irradiance, in this case  ghi.
-					# That’s because these are 5-min resolution data samples, and there are 12 of them in one 60-minute hour.
-					ghi_5min=$(echo "scale=8; $ghi/12" | bc )
-
-					if [[ $ghi -lt 12 && $ghi -gt 0  ]] ; then
-						# Fixes missing leading 0 when the value is a decimal and less than 1
-						ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc | awk '{printf "%.8f", $0}' )
-					else
-						ghi_new=$(echo "$ghi_prev + $ghi_5min" | bc)
-					fi
-					
-					ghi_prev=$ghi_new
-					echo "$node,$sid,$periodstart_formatted,$ghi,$ghi_new" >> $irradiance_data_path
-					
-					# For BackFill computation
-					ghitotal=$((ghi+ghitotal))
-					echo $periodstart_formatted,$ghi,$ghi_new >> data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
-				fi
-			done < $solcast_csv_path
-
+			ghitotal=$( cat $solcast_csv_path | awk -F"," '{sum+=($4)} END {print sum}' )
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal" 2>&1 | tee -a $log_path
-			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Total Enery Spike in KWH: $energyspike" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Total Enery Spike in KWH: $energyspike" 2>&1 | tee -a $log_path
 			total_energy=$energyspike
 			prevenergyinwatthours=0
 
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" 2>&1 | tee -a $log_path
 
 			echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
-			while IFS=, read startperiod irr irh
+			while IFS=, read endperiod startperiod period irr
 			do
 				ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc )
 				energy=$(echo "scale=8 ; $total_energy * $ghiratio * 12" | bc )
@@ -521,7 +481,7 @@ else
 				totalwatthours=$(echo "scale=8 ; $prevenergyinwatthours + $watthours" | bc )
 				prevenergyinwatthours=$totalwatthours
 				echo "$node,$sid,$startperiod,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
-			done < data/${node}_${sourceids}_For_BackFill_Computation_${runtime}.dat
+			done < $solcast_csv_path
 
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" 2>&1 | tee -a $log_path
 			head -n 5 $electrical_energy_data_path 2>&1 | tee -a $log_path
