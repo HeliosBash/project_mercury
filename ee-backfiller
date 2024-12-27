@@ -288,7 +288,7 @@ else
 		ghitotal=$( cat $solcast_csv_path | awk -F"," '{sum+=($4)} END {print sum}' )
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal" 2>&1 | tee -a $log_path
-		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Total Enery Spike in KWH: $energyspike" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Enery Spike in KWH: $energyspike" 2>&1 | tee -a $log_path
 		total_energy=$energyspike
 		prevenergyinwatthours=0
 
@@ -296,13 +296,14 @@ else
 		echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
 		while IFS=, read endperiod startperiod period irr
 		do
+			formatted_startperiod=$(echo $startperiod | sed "s/T/ /g" | sed "s/Z//g")
 			ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc )
 			energy=$(echo "scale=8 ; $total_energy * $ghiratio * 12" | bc )
 			energyinwatts=$(echo "scale=8 ; $energy * 1000" | bc )
 			watthours=$(echo "scale=8 ; $energyinwatts / 12" | bc )
 			totalwatthours=$(echo "scale=8 ; $prevenergyinwatthours + $watthours" | bc )
 			prevenergyinwatthours=$totalwatthours
-			echo "$node,$sid,$startperiod,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
+			echo "$node,$sid,$formatted_startperiod,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
 		done < $solcast_csv_path
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" 2>&1 | tee -a $log_path
