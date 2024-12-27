@@ -70,8 +70,9 @@ if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$e
 	echo "--longitude --energyspike --api --token --secret" | tee -a $log_path
 
 else
-	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-backfiller --node $node --sourceid $sid --timezone $timezone --startdatetime \"$startdatetime\" " | tee -a $log_path
-        echo "--enddatetime \"$enddatetime\" --latitude $lat --longitude $long --energyspike $energyspike --api $solcast_api_token --token $token --secret $secret" | tee -a $log_path
+	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-backfiller --node $node --sourceid $sid --timezone $timezone " | tee -a $log_path
+        echo "--startdatetime \"$startdatetime\" --enddatetime \"$enddatetime\" --latitude $lat --longitude $long --energyspike $energyspike " | tee -a $log_path
+        echo "--api $solcast_api_token --token $token --secret $secret" | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
         log_path="logs/ee-backfiller.log"
@@ -215,8 +216,8 @@ else
                 # Computes the difference between the start and end dates to determine the number of seconds between the date range.
                 date_range_num_seconds=$((end_date_epoch - start_date_epoch))
 
-                # This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a 30 day limit on date range per solcast download.a
-
+                # This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days since there is a
+		# 30 day limit on date range per solcast download
                 solcast_start=$utcstartdate
                 solcast_end=$utcenddate
 		
@@ -344,7 +345,7 @@ else
                 startdate_1hour_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 1 hour" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
 
 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
-		echo -n "--startdate=\"$startdate_5sec_after\" --enddate=\"$startdate_1hour_after\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
+		echo "--startdate=\"$startdate_5sec_after\" --enddate=\"$startdate_1hour_after\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
                 echo "--token=\"$token\" --secret=\"$secret\" to determine SN EVENT 2" | tee -a $log_path
 		
 		sne2_datum="data/${node}_${sourceids}_${startdate_5sec_after}_${startdate_1hour_after}_datum"
@@ -402,8 +403,9 @@ else
 			compress="enabled"
 		fi
 
-		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" --sourceids=\"$sourceids\" --timezone=\"UTC\" " | tee -a $log_path
-		echo "--compression=\"$compress\" --filepath=\"$electrical_energy_data_path\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
+		echo -n "--timezone=\"UTC\" --compression=\"$compress\" --filepath=\"$electrical_energy_data_path\" --token=\"$token\" " | tee -a $log_path
+		echo "--secret=\"$secret\"" | tee -a $log_path
 		while true
 		do
 			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
@@ -421,12 +423,13 @@ else
 			sleep 10
 			jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" --compression="$compress" \
 				--filepath="$electrical_energy_data_path" --token="$token" --secret="$secret")
-			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"preview\" --token=\"$token\" " | tee -a $log_path
-			echo "--secret=\"$secret\" --jobid=\"$jobid\" to preview imported data" | tee -a $log_path
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"preview\" " | tee -a $log_path
+			echo "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" to preview imported data" | tee -a $log_path
+			
 			python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 
-			echo -n "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" " | tee -a $log_path
-			echo "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" will be executed" | tee -a $log_path
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py --job=\"import\" " | tee -a $log_path
+			echo "--action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" will be executed" | tee -a $log_path
 
 			while true
 			do
@@ -439,10 +442,11 @@ else
 				fi
 			done
 			if [[ "${confirm_result^^}" == "Y" ]] ; then
-			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job="import" --action="confirm" " | tee -a $log_path
-			       echo "--token="$token" --secret="$secret" --jobid="$jobid" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" " | tee -a $log_path
+			       echo "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
 			       sleep 10
-			       python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+			       python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" \
+				       --jobid="$jobid" 2>&1 | tee -a $log_path
 			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_manage_jobs.py " | tee -a $log_path
                                echo -n "--job=\"import\" --action=\"list\" --token=\"$token\" " | tee -a $log_path
                                echo    "--secret=\"$secret\" to view import progress" | tee -a $log_path
@@ -452,7 +456,8 @@ else
 			       echo -n "solnet_manage_jobs.py --job=\"import\" --action=\"delete\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
 			       echo "--jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
 			       sleep 10
-			       python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+			       python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" --secret="$secret" \
+				       --jobid="$jobid" 2>&1 | tee -a $log_path
 			fi
 
 		else

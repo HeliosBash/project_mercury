@@ -72,8 +72,11 @@ else
 	log_path="logs/ee-backfiller.log"
 	maxoutput=1000000
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"Month\" --maxoutput=\"1000000\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
-	test_params=$(python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="Month" --maxoutput="1000000" --token="$token" --secret="$secret")
+	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
+	echo -n "--startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"Month\" --maxoutput=\"1000000\" --token=\"$token\" " 2>&1 | tee -a $log_path
+	echo "--secret=\"$secret\"" 2>&1 | tee -a $log_path
+	test_params=$(python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" \
+		--aggregate="Month" --maxoutput="1000000" --token="$token" --secret="$secret")
 	echo "$(date +'%Y-%m-%d %H:%M:%S') $test_params" 2>&1 | tee -a $log_path
 
 	if [[ "$test_params" == *"Error"* ]] ; then
@@ -606,8 +609,8 @@ else
 						done
 						
 						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py " | tee -a $log_path
-						echo -n "--job="import" --action="confirm" --token="$token" --secret="$secret" " | tee -a $log_path
-						echo "--jobid="$jobid" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+						echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
+						echo "--jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
 						sleep 10
 						python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" \
 							--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
