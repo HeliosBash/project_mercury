@@ -464,34 +464,32 @@ else
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Generating Backfill Data" 2>&1 | tee -a $log_path
 
 			a=0
-			runtime=$(date +"%Y%m%d_%H%M%S")
-			electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
-			ghitotal=$( cat $solcast_csv_path | awk -F"," '{sum+=($4)} END {print sum}' )
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal" 2>&1 | tee -a $log_path
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Total Enery Spike in KWH: $energyspike" 2>&1 | tee -a $log_path
-			total_energy=$energyspike
-			prevenergyinwatthours=0
+ 	               	previous_watthours=0
+        	       	total_energy=$energyspike
+                	runtime=$(date +"%Y%m%d_%H%M%S")
+                	ghitotal=$( cat $solcast_csv_path | awk -F"," '{sum+=($4)} END {print sum}' )
+                	electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
 
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" 2>&1 | tee -a $log_path
+                	echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal" 2>&1 | tee -a $log_path
+                	echo "$(date +'%Y-%m-%d %H:%M:%S') Total Energy Spike in KWH: $energyspike" 2>&1 | tee -a $log_path
 
-			echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
-			while IFS=, read endperiod startperiod period irr
-			do
-				formatted_startperiod=$(echo $startperiod | sed "s/T/ /g" | sed "s/Z//g")
-				ghiratio=$(echo "scale=8 ; $irr / $ghitotal" | bc )
-				energy=$(echo "scale=8 ; $total_energy * $ghiratio * 12" | bc )
-				energyinwatts=$(echo "scale=8 ; $energy * 1000" | bc )
-				watthours=$(echo "scale=8 ; $energyinwatts / 12" | bc )
-				totalwatthours=$(echo "scale=8 ; $prevenergyinwatthours + $watthours" | bc )
-				prevenergyinwatthours=$totalwatthours
-				echo "$node,$sid,$formatted_startperiod,$energyinwatts,$totalwatthours" >> $electrical_energy_data_path
-			done < $solcast_csv_path
+              		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" 2>&1 | tee -a $log_path
+               		echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
+                	while IFS=, read endperiod startperiod period irr
+                	do
+                        	formatted_startperiod=$(echo $startperiod | sed "s/T/ /g ; s/Z//g")
+                        	watts=$(echo "scale=8 ; ( $total_energy * ($irr / $ghitotal) * 12 ) * 1000" | bc )
+                        	watthours=$(echo "scale=8 ; $previous_watthours + ($watts / 12)" | bc )
+                        	previous_watthours=$watthours
+                        	echo "$node,$sid,$formatted_startperiod,$watts,$watthours" >> $electrical_energy_data_path
+                	done < $solcast_csv_path
 
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" 2>&1 | tee -a $log_path
 			head -n 5 $electrical_energy_data_path 2>&1 | tee -a $log_path
 			echo "....." 2>&1 | tee -a $log_path
 			tail -n 5 $electrical_energy_data_path 2>&1 | tee -a $log_path
 
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Determining Stitch Parameters" 2>&1 | tee -a $log_path
 			snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" +'%b %d, %Y %H:%M:%S' )
 			snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%b %d, %Y %H:%M:%S' )
 			inner_start_gap_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
