@@ -70,9 +70,9 @@ if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$e
 	echo "--longitude --energyspike --api --token --secret" | tee -a $log_path
 
 else
-	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-backfiller --node $node --sourceid $sid --timezone $timezone " | tee -a $log_path
-        echo "--startdatetime \"$startdatetime\" --enddatetime \"$enddatetime\" --latitude $lat --longitude $long --energyspike $energyspike " | tee -a $log_path
-        echo "--api $solcast_api_token --token $token --secret $secret" | tee -a $log_path
+	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-backfiller --node $node --sourceid $sid --timezone " | tee -a $log_path
+        echo "$timezone --startdatetime \"$startdatetime\" --enddatetime \"$enddatetime\" --latitude $lat --longitude $long " | tee -a $log_path
+        echo "--energyspike $energyspike --api $solcast_api_token --token $token --secret $secret" | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
         log_path="logs/ee-backfiller.log"
@@ -113,8 +113,8 @@ else
         # Checks date range for any existing datum and aborts if there are any
         >data/${node}_${sourceids}_${startdate}_${enddate}_datum
 
-	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" \
-                --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" 2>&1 | tee -a data/${node}_${sourceids}_${startdate}_${enddate}_datum
+	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="None" \
+		--maxoutput="$maxoutput" --token="$token" --secret="$secret" 2>&1 | tee -a data/${node}_${sourceids}_${startdate}_${enddate}_datum
 
 
         datum_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum | wc -l)
@@ -196,10 +196,10 @@ else
                                 fi
 
                         else
-                                echo "$(date +'%Y-%m-%d %H:%M:%S') Delete Process Aborted" 2>&1 | tee -a $log_path
+                                echo "$(date +'%Y-%m-%d %H:%M:%S') Delete Process Aborted" | tee -a $log_path
                         fi
 		else
-			echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" | tee -a $log_path
                 fi
 
 		# File where the python commands to download solcast data will be stored.
@@ -209,8 +209,9 @@ else
                 solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
                 >$solcast_script_path
 
-                # UTC date is used as it is  required when downloading solcast data. Date is converted to epoch to perform aritmethtic operation with the date.
-                start_date_epoch=$(date -d "$utcstartdate" +%s)
+                # UTC date is used as it is  required when downloading solcast data. 
+		# Date is converted to epoch to perform aritmethtic operation with the date.
+		start_date_epoch=$(date -d "$utcstartdate" +%s)
                 end_date_epoch=$(date -d "$utcenddate" +%s)
 
                 # Computes the difference between the start and end dates to determine the number of seconds between the date range.
@@ -271,7 +272,8 @@ else
                 done
 
                 if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+                        echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. " | tee -a $log_path
+			echo "Hit Ctrl + C to Cancel" | tee -a $log_path
                         sleep 5
                         /bin/bash $solcast_script_path
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Process Completed" | tee -a $log_path
@@ -280,8 +282,8 @@ else
                 fi
 
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Generating Backfill Data" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Generating Backfill Data" | tee -a $log_path
 
 		a=0
 		previous_watthours=0
@@ -290,10 +292,10 @@ else
 		ghitotal=$( cat $solcast_csv_path | awk -F"," '{sum+=($4)} END {print sum}' )
 		electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
 		
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Enery Spike in KWH: $energyspike" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Irrandiace Calculated: $ghitotal" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Total Enery Spike in KWH: $energyspike" | tee -a $log_path
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Calculating Backfill Data Driven by Irradiance Data" | tee -a $log_path
 		echo "NodeID,SourceID,Date,watts,wattHours" > $electrical_energy_data_path
 		while IFS=, read endperiod startperiod period irr
 		do
@@ -304,18 +306,21 @@ else
 			echo "$node,$sid,$formatted_startperiod,$watts,$watthours" >> $electrical_energy_data_path
 		done < $solcast_csv_path
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Displaying parts of output file $electrical_energy_data_path" | tee -a $log_path
 		head -n 5 $electrical_energy_data_path 2>&1 | tee -a $log_path
-		echo "....." 2>&1 | tee -a $log_path
+		echo "....." | tee -a $log_path
 		tail -n 5 $electrical_energy_data_path 2>&1 | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Process completed" | tee -a $log_path
 
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Determining Stitch Parameters" 2>&1 | tee -a $log_path
-                startdate_1hour_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 1 hour" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
-                startdate_5sec_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
-                echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
-                echo -n "--startdate=\"$startdate_1hour_before\" --enddate=\"$startdate_5sec_before\" --aggregate=\"None\" " | tee -a $log_path
-                echo "--maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\" to determine SN EVENT 1" | tee -a $log_path
+                startdate_1hour_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 1 hour" +'%Y-%m-%d %H:%M:%SZ' | \
+			sed 's/ /T/g;s/:/%3A/g')
+                startdate_5sec_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | \
+			sed 's/ /T/g;s/:/%3A/g')
+                echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" " | tee -a $log_path
+                echo -n "--sourceids=\"$sourceids\"  --startdate=\"$startdate_1hour_before\" " | tee -a $log_path
+                echo -n "--enddate=\"$startdate_5sec_before\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
+		echo "--token=\"$token\" --secret=\"$secret\" to determine SN EVENT 1" | tee -a $log_path
 
                 sne1_datum="data/${node}_${sourceids}_${startdate_1hour_before}_${startdate_5sec_before}_datum"
                 python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_1hour_before" \
@@ -331,7 +336,8 @@ else
 			sne1_startlocaldate=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $2}' )
 			sne1_startlocaltime=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $3}' )
 			start_watthours=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $(NF-2)}')
-			snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime") + 5 seconds" +'%b %d, %Y %H:%M:%S')
+			snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime") \
+				+ 5 seconds" +'%b %d, %Y %H:%M:%S')
 		fi
 
 
@@ -339,13 +345,15 @@ else
 		startdate_5sec_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
                 startdate_1hour_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 1 hour" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
 
-		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
-		echo "--startdate=\"$startdate_5sec_after\" --enddate=\"$startdate_1hour_after\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
-                echo "--token=\"$token\" --secret=\"$secret\" to determine SN EVENT 2" | tee -a $log_path
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" " | tee -a $log_path
+		echo -n "--sourceids=\"$sourceids\" --startdate=\"$startdate_5sec_after\" --enddate=\"$startdate_1hour_after\" " | tee -a $log_path
+                echo -n "--aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" " | tee -a $log_path
+		echo "--secret=\"$secret\" to determine SN EVENT 2" | tee -a $log_path 
 		
 		sne2_datum="data/${node}_${sourceids}_${startdate_5sec_after}_${startdate_1hour_after}_datum"
 		python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_5sec_after" \
-			--enddate="$startdate_1hour_after" --aggregate="None" --maxoutput="$maxoutput" --token="$token" --secret="$secret" > $sne2_datum
+			--enddate="$startdate_1hour_after" --aggregate="None" --maxoutput="$maxoutput" --token="$token" \
+			--secret="$secret" > $sne2_datum
 		sed -i '1d' $sne2_datum
 		
 		if [ -z "$(cat $sne2_datum)" ] ; then
@@ -355,26 +363,27 @@ else
                         sne2_endlocaldate=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $2}' )
                         sne2_endlocaltime=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $3}' )
 			end_watthours=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $(NF-2)}')
-                        snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne2_endlocaldate $sne2_endlocaltime") - 5 seconds" +'%b %d, %Y %H:%M:%S')
+                        snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne2_endlocaldate $sne2_endlocaltime") \
+				- 5 seconds" +'%b %d, %Y %H:%M:%S')
                 fi
 		
 		inner_start_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
 		inner_end_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - BackFill" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_watthours" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_watthours" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - BackFill" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_watthours" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_watthours" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - BackFill" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_watthours" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_watthours" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - BackFill" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent2_start_end_datetime" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $inner_end_watthours" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $end_watthours" | tee -a $log_path
 
 		########################################################################################################################
 
@@ -398,9 +407,9 @@ else
 			compress="enabled"
 		fi
 
-		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
-		echo -n "--timezone=\"UTC\" --compression=\"$compress\" --filepath=\"$electrical_energy_data_path\" --token=\"$token\" " | tee -a $log_path
-		echo "--secret=\"$secret\"" | tee -a $log_path
+		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_import.py --node=\"$node\" " | tee -a $log_path
+		echo -n "--sourceids=\"$sourceids\" --timezone=\"UTC\" --compression=\"$compress\" " | tee -a $log_path
+		echo "--filepath=\"$electrical_energy_data_path\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 		while true
 		do
 			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
@@ -418,13 +427,16 @@ else
 			sleep 10
 			jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" --compression="$compress" \
 				--filepath="$electrical_energy_data_path" --token="$token" --secret="$secret")
-			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"preview\" " | tee -a $log_path
-			echo "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" to preview imported data" | tee -a $log_path
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" " | tee -a $log_path
+			echo -n "--action=\"preview\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" " | tee -a $log_path
+			echo    "to preview imported data" | tee -a $log_path
 			
-			python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+			python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" \
+				--jobid="$jobid" 2>&1 | tee -a $log_path
 
-			echo -n "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py --job=\"import\" " | tee -a $log_path
-			echo "--action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" will be executed" | tee -a $log_path
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py " | tee -a $log_path
+			echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
+			echo    "--jobid=\"$jobid\" will be executed" | tee -a $log_path
 
 			while true
 			do
@@ -437,8 +449,9 @@ else
 				fi
 			done
 			if [[ "${confirm_result^^}" == "Y" ]] ; then
-			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" " | tee -a $log_path
-			       echo "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" " | tee -a $log_path
+			       echo -n "--action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" " | tee -a $log_path
+			       echo    "in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
 			       sleep 10
 			       python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" \
 				       --jobid="$jobid" 2>&1 | tee -a $log_path
@@ -447,9 +460,9 @@ else
                                echo    "--secret=\"$secret\" to view import progress" | tee -a $log_path
 
 			else
-			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. Deleting Staged Data. Executing python3 " | tee -a $log_path
-			       echo -n "solnet_manage_jobs.py --job=\"import\" --action=\"delete\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
-			       echo "--jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. Deleting Staged Data. Executing " | tee -a $log_path
+			       echo -n " python3 solnet_manage_jobs.py --job=\"import\" --action=\"delete\" --token=\"$token\" " | tee -a $log_path
+			       echo "--secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
 			       sleep 10
 			       python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" --secret="$secret" \
 				       --jobid="$jobid" 2>&1 | tee -a $log_path
