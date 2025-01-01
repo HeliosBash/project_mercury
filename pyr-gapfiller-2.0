@@ -428,47 +428,52 @@ else
 		solcast_start=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' )
                 solcast_end=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ'  )
 
-		# This condition checks if the date range exceeds the limit of 2606399 seconds which is 31 days 
-		# since there is a 30 day limit on date range per solcast download.
-		if [ $gap_num_seconds -gt 2606399 ]; then
-			
-			solcast_partial=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d 23:59:59Z')
+		solcast_start_epoch=$(date -d "$solcast_start" +%s)
+                solcast_end_epoch=$(date -d "$solcast_end" +%s)
 
-			echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+                # Computes the difference between the start and end dates to determine the number of seconds between the date range.
+                date_range_diff_seconds=$gap_num_seconds
+
+		if [ $date_range_diff_seconds -gt 2592000  ]; then
+
+                        solcast_partial=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple queries" 2>&1 | tee -a $log_path
+                        echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
                         echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_partial\" " | tee -a $solcast_script_path
                         echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
 
-			solcast_num_seconds=$gap_num_seconds
+                        prev_solcast_partial=$(date --date "$(date -Iseconds -d "$solcast_partial") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
+                        solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
+                        date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
 
-			while [ $solcast_num_seconds -gt 2606399 ]
-			do
-				prev_solcast_partial=$(date --date "$solcast_partial + 1 day" +'%Y-%m-%d 00:00:00Z')
-				solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
-		                solcast_end_epoch=$(date -d "$solcast_end" +%s )
-				
-				solcast_num_seconds=$((solcast_end_epoch - solcast_partial_epoch))
-				if [ $solcast_num_seconds -gt 2606399 ]; then
-					solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d 23:59:59Z' )
-					
-					echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-                                        echo -n "--startdate=\"$prev_solcast_partial\" --enddate=\"$solcast_partial\" " | tee -a $solcast_script_path
+                        while [ $date_range_diff_seconds -gt 2592000 ]
+                        do
+                                if [ $date_range_diff_seconds -gt 2592000 ]; then
+                                        solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d %H:%M:%SZ')
+                                        echo -n "python3 solcast_download.py --latitude=\"$lat\" " | tee -a $solcast_script_path
+                                        echo -n "--longitude=\"$long\" --startdate=\"$prev_solcast_partial\" " | tee -a $solcast_script_path
+                                        echo -n "--enddate=\"$solcast_partial\" " | tee -a $solcast_script_path
                                         echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
-
+                                        prev_solcast_partial=$(date --date "$(date -Iseconds -d "$solcast_partial") + 1 second" \
+                                                +'%Y-%m-%d %H:%M:%SZ')
+                                        solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
+                                        date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
                                 else
-                                        echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-                                        echo -n "--startdate=\"$prev_solcast_partial\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
-                                        echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
+                                        prev_solcast_partial=$(date --date "$(date -Iseconds -d "$solcast_partial") + 1 second" \
+                                                +'%Y-%m-%d %H:%M:%SZ')
+                                        break
+                                fi
+                        done
 
-					break
-				fi
-			done
-		else
-			echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+                        echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+                        echo -n "--startdate=\"$prev_solcast_partial\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
+                        echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
+
+                else
+                        echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
                         echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
                         echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
-
-		fi
-
+                fi
 
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path in 5 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
 		sleep 5
