@@ -89,28 +89,31 @@ else
                 check_timezone=$(awk '/^Z/ { print $2 }; /^L/ { print $timezone }' /usr/share/zoneinfo/tzdata.zi | grep -w $timezone)
         done
 
+	# Sets the entered date to local and converts it to utc
+
 	localstartdate=$(TZ=$timezone date -d "$startdatetime" )
         localenddate=$(TZ=$timezone date -d "$enddatetime" )
 
         utcstartdate=$(TZ=UTC date -d "$localstartdate" +'%Y-%m-%d %H:%M:%SZ')
         utcenddate=$(TZ=UTC date -d "$localenddate" +'%Y-%m-%d %H:%M:%SZ')
+	
+	# Formats the date with URL encoding to label filenames
 
 	startdate=$(echo $utcstartdate | sed 's/ /T/g;s/:/%3A/g')
         enddate=$(echo $utcenddate | sed 's/ /T/g;s/:/%3A/g')
 
         echo "$(date +'%Y-%m-%d %H:%M:%S') Local : $localstartdate" 2>&1 | tee -a $log_path
         echo "$(date +'%Y-%m-%d %H:%M:%S') UTC   : $utcstartdate" 2>&1 | tee -a $log_path
-        echo "$(date +'%Y-%m-%d %H:%M:%S') UTC Formatted : $startdate" 2>&1 | tee -a $log_path
         echo "$(date +'%Y-%m-%d %H:%M:%S') Local : $localenddate" 2>&1 | tee -a $log_path
         echo "$(date +'%Y-%m-%d %H:%M:%S') UTC   : $utcenddate" 2>&1 | tee -a $log_path
-        echo "$(date +'%Y-%m-%d %H:%M:%S') UTC Formatted : $enddate" 2>&1 | tee -a $log_path
+
+	# Checks date range for any existing datum
 
         echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for any data in specified date range " 2>&1 | tee -a $log_path
         echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
         echo -n "--startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
         echo "--token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 
-        # Checks date range for any existing datum and aborts if there are any
         >data/${node}_${sourceids}_${startdate}_${enddate}_datum
 
 	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="None" \
@@ -119,6 +122,7 @@ else
 
         datum_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum | wc -l)
 
+	# Checks for errors in solnet_query.py results and aborts if there are any
 
 	if [[ "$(cat data/${node}_${sourceids}_${startdate}_${enddate}_datum)" == *"Error"* ]] ; then
                 echo -n "$(date +'%Y-%m-%d %H:%M:%S') " | tee -a $log_path
@@ -130,12 +134,15 @@ else
                 echo "[SOLNET TOKEN] --secret|-c [SOLNET SECRET]"
 
         else
-
+		
+		# Process of deleting data between the date range
 		if [ $datum_count -gt 0 ]; then
 
+			# Ensures format is correct
                         formatted_localstartdate=$(date -d "$localstartdate" +'%Y-%m-%d %H:%M:%S')
                         formatted_localenddate=$(date -d "$localenddate" +'%Y-%m-%d %H:%M:%S')
 
+			# Commands that will be executed to delete data
                         echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Preview and " | tee -a $log_path
                         echo "Confirm commands below will be executed:" | tee -a $log_path
                         echo -n "Preview: python3 solnet_expire_preview.py --node=\"$nodeId\" " | tee -a $log_path
@@ -173,23 +180,30 @@ else
 
                                 echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $result_count" 2>&1 | tee -a $log_path
 
+				# If preview doesn't match the number of data queried between the date range then it aborts the delete process
+                                # and suggests the delete process to be done manually as there could be too many datum for the solnet query to
+                                # download
+
                                 if [ $result_count -ne $gap_count ] ; then
                                         echo -n "$(date +'%Y-%m-%d %H:%M:%S') Skipping Process. Count doesn't match, " | tee -a $log_path
                                         echo "adjust date and run manually" | tee -a $log_path
                                 else
                                         echo -n "$(date +'%Y-%m-%d %H:%M:%S') Count of previewed data match count of data " | tee -a $log_path
                                         echo "between date range." 2>&1 | tee -a $log_path
-
+					
+					# Actual delete process with 10 second delay to give user a chance to cancel process
                                         echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py " | tee -a $log_path
                                         echo -n "--node=\"$nodeId\" --sourceids=\"$sourceids\" " | tee -a $log_path
                                         echo -n "--localstartdate=\"$formatted_localstartdate\" " | tee -a $log_path
                                         echo -n "--localenddate=\"$formatted_localenddate\" --token=\"$token\"" | tee -a $log_path
                                         echo "--secret=\"$secret\" in 10 seconds. Hit CTRL + C to Cancel" | tee -a $log_path
                                         sleep 10
+
                                         python3 solnet_expire_confirm.py --node="$nodeId" --sourceids="$sourceids" \
                                                 --localstartdate="$formatted_localstartdate" --localenddate="$formatted_localenddate" \
                                                 --token="$token" --secret="$secret" 2>&1 | tee -a $log_path
-
+					
+					# Command to show the progress of the delete process
                                         echo -n "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_manage_jobs.py " | tee -a $log_path
                                         echo -n "--job=\"expire\" --action=\"list\" --token=\"$token\" " | tee -a $log_path
                                         echo "--secret=\"$secret\" to monitor progress" | tee -a $log_path
@@ -201,6 +215,8 @@ else
 		else
 			echo "$(date +'%Y-%m-%d %H:%M:%S') No Data Detected. Preparing Solcast Query Data" | tee -a $log_path
                 fi
+
+		# Solcast Download Process
 
 		# File where the python commands to download solcast data will be stored.
                 solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_script.sh"
@@ -223,41 +239,39 @@ else
                 # This condition checks if the date range exceeds the limit of 2592000  seconds which is 30 days
                 # since there is a 30 day limit on date range per solcast download.
 
-                if [ $date_range_diff_seconds -gt 2592000  ]; then
+		if [ $date_range_diff_seconds -gt 2592000  ]; then
 
-                        solcast_partial=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
-                        echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple queries" 2>&1 | tee -a $log_path
+                        solcast_partial_end=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
+                        echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple solcast queries" 2>&1 | tee -a $log_path
                         echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-                        echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_partial\" " | tee -a $solcast_script_path
+                        echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_partial_end\" " | tee -a $solcast_script_path
                         echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
 
-                        prev_solcast_partial=$(date --date "$(date -Iseconds -d "$solcast_partial") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
-                        solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
+                        solcast_partial_start=$(date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
+                        solcast_partial_epoch=$(date -d "$solcast_partial_start" +%s )
                         date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
 
                         while [ $date_range_diff_seconds -gt 2592000 ]
                         do
                                 if [ $date_range_diff_seconds -gt 2592000 ]; then
-                                        solcast_partial=$(date --date "$prev_solcast_partial + 30 days" +'%Y-%m-%d %H:%M:%SZ')
-                                        echo -n "python3 solcast_download.py --latitude=\"$lat\" " | tee -a $solcast_script_path
-                                        echo -n "--longitude=\"$long\" --startdate=\"$prev_solcast_partial\" " | tee -a $solcast_script_path
-                                        echo -n "--enddate=\"$solcast_partial\" " | tee -a $solcast_script_path
+
+                                        solcast_partial_end=$(date --date "$solcast_partial_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
+                                        echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+                                        echo -n "--startdate=\"$solcast_partial_start\" --enddate=\"$solcast_partial_end\" " | tee -a $solcast_script_path
                                         echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
-                                        prev_solcast_partial=$(date --date "$(date -Iseconds -d "$solcast_partial") + 1 second" \
-                                                +'%Y-%m-%d %H:%M:%SZ')
-                                        solcast_partial_epoch=$(date -d "$prev_solcast_partial" +%s )
+
+                                        solcast_partial_start=$(date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
+                                        solcast_partial_epoch=$(date -d "$solcast_partial_start" +%s )
                                         date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
                                 else
-                                        prev_solcast_partial=$(date --date "$(date -Iseconds -d "$solcast_partial") + 1 second" \
-                                                +'%Y-%m-%d %H:%M:%SZ')
+                                        solcast_partial_start=$(date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
                                         break
                                 fi
                         done
 
                         echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-                        echo -n "--startdate=\"$prev_solcast_partial\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
+                        echo -n "--startdate=\"$solcast_partial_start\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
                         echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
-
                 else
                         echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
                         echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
@@ -343,8 +357,6 @@ else
 			snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime") \
 				+ 5 seconds" +'%b %d, %Y %H:%M:%S')
 		fi
-
-
 
 		startdate_5sec_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
                 startdate_1hour_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 1 hour" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
@@ -452,6 +464,7 @@ else
 					break;
 				fi
 			done
+
 			if [[ "${confirm_result^^}" == "Y" ]] ; then
 			       echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py --job=\"import\" " | tee -a $log_path
 			       echo -n "--action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" " | tee -a $log_path
