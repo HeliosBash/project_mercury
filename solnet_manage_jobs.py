@@ -20,7 +20,7 @@ def list_expire_jobs(token, secret):
 def list_import_jobs(token, secret):
     client = Client(token, secret)
     response = client.listimportjobs()
-    print("Job_ID,Job_State,Done,Cancelled,Name")
+    print("Job_ID,Job_State,Done,Cancelled,Name,Message")
     for element in response:
         name = element['configuration']['inputConfiguration']['name'].replace(" ", "_")
         jobid = element.get('jobId', 'N/A')

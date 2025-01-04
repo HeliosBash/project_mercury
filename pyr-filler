@@ -418,14 +418,16 @@ else
                 	inner_start_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
                 	inner_end_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')
 		
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Fill for PYR" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 1"
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Start Border - Fill for PYR" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" 2>&1 | tee -a $log_path
                		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_irradiancehours" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_irradiancehours" 2>&1 | tee -a $log_path
-                	echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Fill for PYR" 2>&1 | tee -a $log_path
+                	echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 2"
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Description: End Border - Fill for PYR" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" 2>&1 | tee -a $log_path
                 	echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" 2>&1 | tee -a $log_path

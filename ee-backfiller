@@ -386,14 +386,16 @@ else
 		inner_start_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
 		inner_end_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - BackFill" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Solarnetwork Event 1" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Start Border - BackFill Driven By Irradiance Data" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_watthours" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_watthours" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - BackFill" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Solarnetwork Event 2" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Description: End Border - BackFill Driven By Irradiance Data" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
