@@ -26,10 +26,10 @@ while [ $# -gt 0 ] ; do
 			if [[ "$1" != *=* ]]; then shift; fi
 			long="${1#*=}"
 			;;
-		--energyspike*|-g*)
-			if [[ "$1" != *=* ]]; then shift; fi
-			energyspike="${1#*=}"
-			;;
+		#--energyspike*|-g*)
+		#	if [[ "$1" != *=* ]]; then shift; fi
+		#	energyspike="${1#*=}"
+		#	;;
 		--api*|-p*)
 			if [[ "$1" != *=* ]]; then shift; fi
 			solcast_api_token="${1#*=}"
@@ -46,24 +46,28 @@ while [ $# -gt 0 ] ; do
 			echo -n "Usage: ee-backfiller-2.0 [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] "
 			echo -n "--startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [ENDDATETIME "
 			echo -n "in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] "
-			echo -n "--energyspike|-g [ENERGY SPIKE IN KWH] --api|-p [SOLCAST API TOKEN] --token|-k "
+			#echo -n "--energyspike|-g [ENERGY SPIKE IN KWH] --api|-p [SOLCAST API TOKEN] --token|-k "
+			echo -n "--api|-p [SOLCAST API TOKEN] --token|-k "
 			echo "[SOLNET TOKEN] --secret|-c [SOLNET SECRET]" 
 			exit 0
 			;;
 		*)
 			>&2 echo -n "Error: The following arguments are required --node --sourceid --startdatetime "
-			echo "--enddatetime --latitude --longitude --energyspike --api --token --secret"
+			#echo "--enddatetime --latitude --longitude --energyspike --api --token --secret"
+			echo "--enddatetime --latitude --longitude --api --token --secret"
 			exit 1
 			;;
 	esac
 	shift
 done
 
-if [[ -z "$node" || -z "$sid" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" || -z "$energyspike" \
-	|| -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
-
-        echo -n "Error: The following arguments are required --node --sourceid --startdatetime --enddatetime --latitude "
-	echo "--longitude --energyspike --api --token --secret" | tee -a $log_path
+if [[ -z "$node" || -z "$sid" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" \
+	|| -z "$solcast_api_token" || -z "$token" || -z "$secret" ]]
+	#|| -z "$energyspike" || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
+then
+        echo -n "Error: The following arguments are required --node --sourceid --startdatetime " | tee -a $log_path
+	echo "--enddatetime --latitude --longitude --api --token --secret" | tee -a $log_path
+	#echo "--enddatetime --latitude --longitude --energyspike --api --token --secret" | tee -a $log_path
 
 else
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
@@ -74,7 +78,7 @@ else
 
 	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node=\"$node\" " | tee -a $log_path
 	echo -n "--sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"Month\" " | tee -a $log_path
-	echo "--maxoutput=\"1000000\" --token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+	echo "--maxoutput=\"1000000\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 	test_params=$(python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" \
 		--aggregate="Month" --maxoutput="1000000" --token="$token" --secret="$secret")
 	echo "$(date +'%Y-%m-%d %H:%M:%S') $test_params" 2>&1 | tee -a $log_path
@@ -83,17 +87,19 @@ else
 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Usage: ee-backfiller-2.0 [--help|-h] --node|-n [NODE] " | tee -a $log_path
 		echo -n "--sourceid|-i [SOURCE ID] --startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] " | tee -a $log_path
 		echo -n "--enddatetime|-e [ENDDATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] " | tee -a $log_path
-		echo -n "--longitude|-o [LONGITUDE] --energyspike|-g [ENERGY SPIKE IN KWH] --api|-p " | tee -a $log_path
-		echo "[SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" | tee -a $log_path
+		echo -n "--longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN]" | tee -a $log_path
+		#echo -n "--energyspike|-g [ENERGY SPIKE IN KWH] " | tee -a $log_path
+		echo "--token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" | tee -a $log_path
 	else
 	
 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-backfiller-2.0 --node " | tee -a $log_path
 		echo -n "$node --sourceids $sid --startdatetime $startdatetime --enddatetime " | tee -a $log_path
-		echo -n "$enddatetime --latitude $lat --longitude $long --energyspike $energyspike " | tee -a $log_path
+		echo -n "$enddatetime --latitude $lat --longitude $long " | tee -a $log_path
 		echo "--api $solcast_api_token --token $token --secret $secret" | tee -a $log_path
+		#echo "--energyspike $energyspike --api $solcast_api_token --token $token --secret $secret" | tee -a $log_path
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" 2>&1 | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" 2>&1 | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') *********** PROCESS 1 *************" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Identifying gaps with aggregation in Days" | tee -a $log_path
 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing: python3 solnet_query.py --node=\"$node\" " | tee -a $log_path
 		echo -n "--sourceids=\"$sourceids\" --startdate=\"$startdate\" --enddate=\"$enddate\" " | tee -a $log_path
 		echo "--aggregate=\"Day\" --maxoutput=\"$maxoutput\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
@@ -346,6 +352,8 @@ else
 						$minute_data_path | cut -d "," -f 23 )
 					end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
 						$minute_data_path | cut -d "," -f 23 )
+			
+					energyspike=$((end_gap_watthours - start_gap_watthours))
 
 					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_utc_datetime " | tee -a $log_path
 					echo "and $end_gap_utc_datetime" | tee -a $log_path
@@ -430,7 +438,7 @@ else
 			if [ $date_range_diff_seconds -gt 2592000  ]; then
 
 				solcast_partial_end=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple solcast queries" 2>&1 | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple solcast queries" | tee -a $log_path
 				echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
 				echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_partial_end\" " | tee -a $solcast_script_path
 				echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
@@ -490,7 +498,8 @@ else
                 	while IFS=, read endperiod startperiod period irr
                 	do
                         	formatted_startperiod=$(echo $startperiod | sed "s/T/ /g ; s/Z//g")
-                        	watts=$(echo "scale=8 ; ( $total_energy * ($irr / $ghitotal) * 12 ) * 1000" | bc )
+                        	#watts=$(echo "scale=8 ; ( $total_energy * ($irr / $ghitotal) * 12 ) * 1000" | bc )
+                        	watts=$(echo "scale=8 ; ( $total_energy * ($irr / $ghitotal) * 12 )" | bc )
                         	watthours=$(echo "scale=8 ; $previous_watthours + ($watts / 12)" | bc )
                         	previous_watthours=$watthours
                         	echo "$node,$sid,$formatted_startperiod,$watts,$watthours" >> $electrical_energy_data_path
@@ -631,7 +640,7 @@ else
 						sleep 10
 						python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" \
 							--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " 2>&1 | tee -a $log_path
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " | tee -a $log_path
 					
 					fi
 
@@ -642,7 +651,7 @@ else
 					sleep 10
 					python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" \
 						--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " 2>&1 | tee -a $log_path
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Import Process Completed. " | tee -a $log_path
 				fi
 				
 			
