@@ -40,160 +40,172 @@ done
 
 if [[ -z "$node" || -z "$sid" || -z "$month" || -z "$year" || -z "$token" || -z "$secret" ]] ; then
 
-        echo "$(date +'%Y-%m-%d %H:%M:%S') Error: The following arguments are required --node --sourceid --month --year --token --secret" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Error: The following arguments are required --node --sourceid --month --year --token --secret"
 
 else
+	sourceids=$(echo $sid | sed "s/\//%2F/g")
+        maxoutput=1000000
+	log_path="logs/ee-bad-data-deleter.log"
 	echo "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash ee-bad-data-deleter --node $node --sourceids $sid --month $month --year $year --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 
-	sourceids=$(echo $sid | sed "s/\//%2F/g")
-	maxoutput=1000000
-
-	rm -rf data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
+	rm -f data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/*
+	rmdir data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/
 	mkdir data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data
-	>data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
-
+	working_dir="data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data"
+	results_file="$working_dir/${node}_${sourceids}_${month}_${year}_bad_data_results.csv"
+	>$results_file
+	
 
 	startdate="$year-$month-01"
 	enddate=$(date -d "$startdate + 1 month" "+%Y-%m-%d")
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for month $year-$month" 2>&1 | tee -a logs/ee-bad-data-deleter.log 
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for month $year-$month" | tee -a $log_path
 
 	while [ "$startdate" != "$enddate" ]; do 
   
-	
 		for hours in $(seq -f "%02g" 0 23)
 		do
 		
 			starttime="${startdate}T${hours}%3A00"
 			endtime="${startdate}T${hours}%3A59"
 		
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning for bad data between $starttime $endtime" 2>&1 | tee -a logs/ee-bad-data-deleter.log
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node $node --sourceids $sourceids --startdate $starttime --enddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning for bad data between $starttime $endtime" | | tee -a $log_path
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
+			echo -n "--startdate=\"$starttime\" --enddate=\"$endtime\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
+			echo "--token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 		
-			python3 solnet_query.py --node $node --sourceids $sourceids --startdate $startdate --enddate $enddate --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+			python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" --enddate="$enddate" --aggregate="None" \
+				--maxoutput="$maxoutput" --token="$token" --secret="$secret" > $working_dir/${node}_${sourceids}_${starttime}_${endtime}_data.csv
 		
-			sed -i '1d' data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${starttime}_${endtime}_data.csv
-			while IFS=, read Created localDate localTime nodeId sourceId watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
-			do
+			sed -i '1d' $working_dir/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+			
+			while read datum_row
+                	do
+				wattHours=$( echo $datum_row | awk -F "," '{print $(NF-2)}' )
+	                        wattHoursReverse=$( echo $datum_row | awk -F "," '{print $(NF-1)}' )
+
         			if [[ $wattHours == 0 || $wattHoursReverse == 0 ]] ; then
-					echo "$Created,$localDate,$localTime,$nodeId,$sourceId,$watts,$current,$voltage,$frequency,$powerFactor,$apparentPower,$reactivePower,$lineVoltage,$current_a,$current_b,$current_c,$voltage_a,$voltage_b,$voltage_c,$voltage_ab,$voltage_bc,$voltage_ca,$wattHours,$wattHoursReverse,$phase" 2>&1 | tee -a data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
+					echo "$datum_row" | tee -a $results_file
 				fi
-			done < data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${starttime}_${endtime}_data.csv
-			sleep 2
+
+			done < $working_dir/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+			sleep 1
 		done
 		startdate=$(date -d "$startdate + 1 day" "+%Y-%m-%d")	
 	done
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning ended for month $startdate" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning ended for month $startdate" | tee -a $log_path
 
-
-	file=data/${node}_${sourceids}_${month}_${year}_scan_for_bad_data/${node}_${sourceids}_${month}_${year}_bad_data_results.csv
 	yes_to_all=0
 
-	if [ $(awk -F, '{print NF; exit}' $file) -ne 25 ] ; then
+	if [ $(awk -F, '{print NF; exit}' $results_file) -ne 25 ] ; then
 		
-		echo "$(date +'%Y-%m-%d %H:%M:%S') The number of columns in the csv file is incorrect. Upload a csv file with the correct number of columns." 2>&1 | tee -a logs/ee-bad-data-deleter.log
+		echo "$(date +'%Y-%m-%d %H:%M:%S') The number of columns in the csv file is incorrect. Upload a csv file with the correct number of columns." | tee -a $log_path
 	else
-			# Loop through the data from the filename provided
+		#  Loop through the data from the filename provided
 
-		while IFS=, read Created localDate localTime nodeId sourceId watts current voltage frequency powerFactor apparentPower reactivePower lineVoltage current_a current_b current_c voltage_a voltage_b voltage_c voltage_ab voltage_bc voltage_ca wattHours wattHoursReverse phase
-		do				
-				echo ""	
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Date Range: $localDate $localTime" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+		while read datum_row
+                do
+			Created=$( echo $datum_row | awk -F "," '{print $1}' )
+                        localDate=$( echo $datum_row | awk -F "," '{print $2}' )
+                        localTime=$( echo $datum_row | awk -F "," '{print $3}' )
+
+			echo ""	
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Date Range: $localDate $localTime" | tee -a $log_path
 				
-				# Ensure there is a value for localDate and localTime
+			# Ensure there is a value for localDate and localTime
 
-				if [[ -z "${localDate}" || -z "${localTime}" ]] ; then
+			if [[ -z "${localDate}" || -z "${localTime}" ]] ; then
 
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Bad date date range. Skipping Datum." 2>&1 | tee -a logs/ee-bad-data-deleter.log
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Bad date date range. Skipping Datum." | tee -a $log_path
 				
-				else
-					# Caculate data range to capture bad data. 10 seconds before and after.
+			else
+				# Caculate data range to capture bad data. 10 seconds before and after.
 
-        				seconds=$(echo $Created | cut -d : -f 3 | cut -d . -f 1 | sed "s/Z//g")
-        				current_date="$localDate $localTime:$seconds"
-        				current_epoch=$(date +%s --date="$current_date")
+        			half_seconds=$(echo $Created | awk -F ':' '{print $NF}' | sed "s/Z//g")
+        			current_date="$localDate $localTime:$half_seconds"
 
-       					before_date=$(date '+%Y-%m-%d %H:%M:%S' --date="@$((current_epoch - 10))")
-        				after_date=$(date '+%Y-%m-%d %H:%M:%S' --date="@$((current_epoch + 10))")
+				before_date=$(date --date "$(date -Iseconds -d "$current_date") - 5 second" +'%Y-%m-%d %H:%M:%S')
+				after_date=$(date --date "$(date -Iseconds -d "$current_date") + 5 second" +'%Y-%m-%d %H:%M:%S')
         			
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Date of Datum to be Deleted: $current_date" 2>&1 | tee -a logs/ee-bad-data-deleter.log
-        				echo "$(date +'%Y-%m-%d %H:%M:%S') Date Range of Datum to be Deleted: from $before_date to $after_date" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Date of Datum to be Deleted: $current_date" | tee -a $log_path
+        			echo "$(date +'%Y-%m-%d %H:%M:%S') Date Range of Datum to be Deleted: from $before_date to $after_date" | tee -a $log_path
         			
-					before_param_date=$(echo $before_date | sed "s/ /T/g;s/:/%3A/g")
-        				after_param_date=$(echo $after_date | sed "s/ /T/g;s/:/%3A/g")
-					sourceId_formatted=$(echo $sourceId | sed "s/\//%2F/g")
-        			
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceId_formatted --localstartdate $before_param_date --localenddate $after_param_date --token $token --secret $secret" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node=\"$node\" " | tee -a $log_path
+				echo -n "--sourceids=\"$sid\" --localstartdate=\"$before_date\" " | tee -a $log_path
+				echo "--localenddate=\"$after_date\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 				
-					# API Call to do a preview of the delete and returns the count of datum
+				# API Call to do a preview of the delete and returns the count of datum
 
-					count_result=$(python3 solnet_expire_preview.py --node $nodeId --sourceids $sourceId_formatted --localstartdate $before_param_date --localenddate $after_param_date --token $token --secret $secret) 
+				count_result=$(python3 solnet_expire_preview.py --node="$node" --sourceids="$sid" --localstartdate="$before_date" \
+					--localenddate="$after_date" --token="$token" --secret="$secret") 
 				
-					echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $count_result" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+				echo "$(date +'%Y-%m-%d %H:%M:%S') COUNT RESULT = $count_result" | tee -a $log_path
 				
-					# Ensures datum to be deleted is 1
+				# Ensures datum to be deleted is 1
 
-					if [ $count_result -gt 1 ] ; then
+				if [ $count_result -gt 1 ] ; then
 
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum. There is more than one datum previewed to be deleted. Adjust datetime range." 2>&1 | tee -a logs/ee-bad-data-deleter.log
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum. There is more than one datum previewed to be deleted. Adjust datetime range." | tee -a $log_path
 				
-					elif [ $count_result -eq 0 ] ; then
+				elif [ $count_result -eq 0 ] ; then
                 			
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum. No datum previewed to be deleted. Adjust datetime range." 2>&1 | tee -a logs/ee-bad-data-deleter.log
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum. No datum previewed to be deleted. Adjust datetime range." | tee -a $log_path
         			
-					elif [ $count_result -eq 1 ] ; then
-                 			
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceId_formatted --localstartdate $before_param_date --localenddate $after_param_date --token $token --secret $secret" 2>&1 | tee -a logs/ee-bad-data-deleter.log
+				elif [ $count_result -eq 1 ] ; then
+					
+					
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_expire_confirm.py --node=\"$node\" " | tee -a $log_path
+					echo -n "--sourceids=\"$sid\" --localstartdate=\"$before_date\" " | tee -a $log_path
+					echo "--localenddate=\"$after_date\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 
-						if [ $yes_to_all -eq 0 ] ; then
-							
-							# Require user input to confirm
-
-							while true
-                 					do
-                        					echo -n "Continue [Y/N/ALL]: "
-                        					read continue_result < /dev/tty
+					if [ $yes_to_all -eq 0 ] ; then
+						# Require user input to confirm
+						while true
+                 				do
+                        				echo -n "Continue [Y/N/ALL]: "
+                        				read continue_result < /dev/tty
                         				
-								if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" || "${continue_result^^}" == "ALL" ]] ; then
+							if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" || "${continue_result^^}" == "ALL" ]] ; then
 							
-									if [[ "${continue_result^^}" == "ALL" ]] ; then
-                                                        			yes_to_all=1
-                                                        			continue_result="Y"
-                                                			fi
+								if [[ "${continue_result^^}" == "ALL" ]] ; then
+                                                       			yes_to_all=1
+                                                       			continue_result="Y"
+                                               			fi
 
-									echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" 2>&1 | tee -a logs/ee-bad-data-deleter.log
-                        						break;
-                        					fi
-                 					done
-						fi
+								echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+                       						break;
+                       					fi
+               					done
+					fi
 
-						if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "ALL" ]] ; then
-							
-							if [ $yes_to_all -eq 1 ] ; then
-                                                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied ALL - Yes To All" 2>&1 | tee -a logs/ee-bad-data-deleter.log
-                                                	fi	
+					if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "ALL" ]] ; then
 						
-							echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceId_formatted --localstartdate $before_param_date --localenddate $after_param_date --token $token --secret $secret" 2>&1 | tee -a logs/ee-bad-data-deleter.log
-							
-							# API Call to create job to delete the datum
-							python3 solnet_expire_confirm.py --node $nodeId --sourceids $sourceId_formatted --localstartdate $before_param_date --localenddate $after_param_date --token $token --secret $secret 2>&1 | tee -a logs/ee-bad-data-deleter.log
+						if [ $yes_to_all -eq 1 ] ; then
+                                                       	echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied ALL - Yes To All" | tee -a $log_path
+                                               	fi	
+						
+						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py --node=\"$node\" " | tee -a $log_path
+                                        	echo -n "--sourceids=\"$sid\" --localstartdate=\"$before_date\" " | tee -a $log_path
+                                        	echo "--localenddate=\"$after_date\" --token=\"$token\" --secret=\"$secret\" in 3 seconds. Hit CTRL + C to Cancel." | tee -a $log_path
+
+						sleep 3
+						
+						# API Call to delete the datum
+						python3 solnet_expire_confirm.py --node="$node" --sourceids="$sid" --localstartdate="$before_date" \
+							--localenddate="$after_date" --token="$token" --secret="$secret" 2>&1 | tee -a $log_path
                  				
-						elif [[ "${continue_result^^}" == "N" ]] ; then
+					elif [[ "${continue_result^^}" == "N" ]] ; then
                         			
-							echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum." 2>&1 | tee -a logs/ee-bad-data-deleter.log
-                 				else
-                        				echo "$(date +'%Y-%m-%d %H:%M:%S') Response not Y or N. Skipping Datum." 2>&1 | tee -a logs/ee-bad-data-deleter.log
-                 				fi
-        				else
-              					echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum. Invalid Result" 2>&1 | tee -a logs/ee-bad-data-deleter.log
-        				fi
-        				echo ""
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum." | tee -a $log_path
+					else
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Response not Y or N. Skipping Datum." | tee -a $log_path
+					fi
+				else
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Skipping Datum. Invalid Result" | tee -a $log_path
 				fi
-
-				sleep 2
-
-		done < $file
-	fi	
-	
+				echo ""
+			fi
+		done < $results_file
+	fi
 fi
