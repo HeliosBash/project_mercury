@@ -610,6 +610,7 @@ else
 			inner_end_gap_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
                 
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Solarnetwork Event 1" | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap Fill" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Start Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
@@ -618,6 +619,7 @@ else
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_gap_watthours" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_gap_watthours" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Solarnetwork Event 2" | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap Fill" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Description: End Border - Energy Gap Backfill driven by Irradiance Data" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
 			echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path

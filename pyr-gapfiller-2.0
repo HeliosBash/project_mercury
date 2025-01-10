@@ -521,14 +521,18 @@ else
                 snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%b %d, %Y %H:%M:%S' )
 		inner_start_gap_irradiancehours=$(head -n 2 $irradiance_data_path | tail -n 1 | awk -F ',' '{print $NF}')
 		inner_end_gap_irradiancehours=$(tail -n 1 $irradiance_data_path | awk -F ',' '{print $NF}')
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Border - Fill for PYR Gap" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 1" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap Fill" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Start Border - Fill for PYR Gap" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $start_gap_irradiancehours" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $inner_start_gap_irradiancehours" | tee -a $log_path
-		echo "$(date +'%Y-%m-%d %H:%M:%S') End Border - Fill for PYR Gap" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 2" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap Fill" | tee -a $log_path
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Description: End Border - Fill for PYR Gap" | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" | tee -a $log_path
@@ -542,13 +546,13 @@ else
 
         	echo "$(date +'%Y-%m-%d %H:%M:%S') Process 6 completed" | tee -a $log_path
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 7*************" 2>&1 | tee -a $log_path
-                echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" 2>&1 | tee -a $log_path
-  		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" 2>&1 | tee -a $log_path	
+		echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 7*************" | tee -a $log_path
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" | tee -a $log_path
+  		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" | tee -a $log_path	
 		filesizebytes=$(ls -l $irradiance_data_path | awk '{print $5}')	
 		filsesizemb=$(($filesizebytes/1048576))
 
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" 2>&1 | tee -a $log_path	
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Size of file: $filsesizemb" | tee -a $log_path	
                 if [ $filsesizemb -lt 20 ] ; then
                         compress="disabled"
                 else
