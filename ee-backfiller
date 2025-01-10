@@ -75,7 +75,8 @@ else
         echo "--energyspike $energyspike --api $solcast_api_token --token $token --secret $secret" | tee -a $log_path
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
-        log_path="logs/ee-backfiller.log"
+        runtime=$(date +"%Y%m%d_%H%M%S")
+	log_path="data/ee-backfiller-${runtime}.log"
         maxoutput=1000000
 
         # Check timezone format if its valid

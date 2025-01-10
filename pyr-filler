@@ -71,7 +71,8 @@ else
 
 
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
-	log_path="logs/pyr-filler.log"
+	runtime=$(date +"%Y%m%d_%H%M%S")
+	log_path="data/pyr-filler-${runtime}.log"
 	maxoutput=1000000
 
 	# Check timezone format if its valid

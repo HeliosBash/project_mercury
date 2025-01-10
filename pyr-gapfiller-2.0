@@ -65,7 +65,8 @@ else
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
 	startdate=$(echo ${startdatetime} | sed "s/ /T/g;s/:/%3A/g")
 	enddate=$(echo ${enddatetime} | sed "s/ /T/g;s/:/%3A/g")
-	log_path="logs/pyr-gapfiller.log"
+	runtime=$(date +"%Y%m%d_%H%M%S")
+	log_path="data/pyr-gapfiller-${runtime}.log"
 	maxoutput=1000000
 	
 	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Testing parameters with python3 solnet_query.py --node=\"$node\" " 2>&1 | tee -a $log_path
