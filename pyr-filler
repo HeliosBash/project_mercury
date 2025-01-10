@@ -404,7 +404,7 @@ else
 			sed -i '1d' $sne2_datum
 
 			if [ -z "$(cat $sne2_datum)" ] ; then
-				snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$localstartdate") + 5 seconds" \
+				snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$localenddate") + 5 seconds" \
 					+'%b %d, %Y %H:%M:%S')
                         	end_irradiancehours=0
                 	else

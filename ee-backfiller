@@ -373,7 +373,7 @@ else
 		sed -i '1d' $sne2_datum
 		
 		if [ -z "$(cat $sne2_datum)" ] ; then
-			snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$localstartdate") + 5 seconds" +'%b %d, %Y %H:%M:%S')
+			snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$localenddate") + 5 seconds" +'%b %d, %Y %H:%M:%S')
                         end_watthours=0
                 else
                         sne2_endlocaldate=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $2}' )
@@ -488,7 +488,7 @@ else
 			fi
 
 		else
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Process Aborted" 2>&1 | tee -a $log_path
+			echo "$(date +'%Y-%m-%d %H:%M:%S') Process Aborted" | tee -a $log_path
 		fi
         fi
 fi
