@@ -332,15 +332,19 @@ else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Process completed" | tee -a $log_path
 
                 echo "$(date +'%Y-%m-%d %H:%M:%S') Determining Stitch Parameters" 2>&1 | tee -a $log_path
-                startdate_1hour_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 1 hour" +'%Y-%m-%d %H:%M:%SZ' | \
+                
+		# Creating a data sample window that is 1 hour before the startdate to get the final reading at the start of the gap  
+		startdate_1hour_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 1 hour" +'%Y-%m-%d %H:%M:%SZ' | \
 			sed 's/ /T/g;s/:/%3A/g')
                 startdate_5sec_before=$(date --date "$(date -Iseconds -d "$utcstartdate") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | \
 			sed 's/ /T/g;s/:/%3A/g')
+
                 echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" " | tee -a $log_path
                 echo -n "--sourceids=\"$sourceids\"  --startdate=\"$startdate_1hour_before\" " | tee -a $log_path
                 echo -n "--enddate=\"$startdate_5sec_before\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
 		echo "--token=\"$token\" --secret=\"$secret\" to determine SN EVENT 1" | tee -a $log_path
 
+		# Filename where possible boundary readings at the start of the gap is stored
                 sne1_datum="data/${node}_${sourceids}_${startdate_1hour_before}_${startdate_5sec_before}_datum"
                 python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_1hour_before" \
 			--enddate="$startdate_5sec_before" --aggregate="None" --maxoutput="$maxoutput" --token="$token" \
@@ -348,9 +352,11 @@ else
 
                 sed -i '1d' $sne1_datum
 
+		# If there is no datum before the start of the gap, final reading is 0 and start and end time for event 1 is 5 seconds before the start date of the gap
                 if [ -z "$(cat $sne1_datum)" ] ; then
 			snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$localstartdate") - 5 seconds" +'%b %d, %Y %H:%M:%S')
                         start_watthours=0
+		# If there is datum before the start of the gap, final reading is the last datum entry and start and end time for event 1 is 5 seconds after the last datum entry
                 else
 			sne1_startlocaldate=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $2}' )
 			sne1_startlocaltime=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $3}' )
@@ -359,6 +365,7 @@ else
 				+ 5 seconds" +'%b %d, %Y %H:%M:%S')
 		fi
 
+		# Creating a data sample window that is 1 hour after the enddate to get the start reading at the end of the gap
 		startdate_5sec_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
                 startdate_1hour_after=$(date --date "$(date -Iseconds -d "$utcenddate") + 1 hour" +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
 
@@ -367,15 +374,18 @@ else
                 echo -n "--aggregate=\"None\" --maxoutput=\"$maxoutput\" --token=\"$token\" " | tee -a $log_path
 		echo "--secret=\"$secret\" to determine SN EVENT 2" | tee -a $log_path 
 		
+		# Filename where possible boundary readings at the end of the gap is stored
 		sne2_datum="data/${node}_${sourceids}_${startdate_5sec_after}_${startdate_1hour_after}_datum"
 		python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_5sec_after" \
 			--enddate="$startdate_1hour_after" --aggregate="None" --maxoutput="$maxoutput" --token="$token" \
 			--secret="$secret" > $sne2_datum
 		sed -i '1d' $sne2_datum
 		
+		# If there is no datum after the end of the gap, final reading is 0 and the start and end time for event 2 is 5 seconds after the end date of the gap
 		if [ -z "$(cat $sne2_datum)" ] ; then
 			snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$localenddate") + 5 seconds" +'%b %d, %Y %H:%M:%S')
                         end_watthours=0
+		# If there is datum after the end of the gap, final reading is the first datum entry and the start and end time for event 2 is 5 seconds before the first datum entry
                 else
                         sne2_endlocaldate=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $2}' )
                         sne2_endlocaltime=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $3}' )
@@ -384,9 +394,13 @@ else
 				- 5 seconds" +'%b %d, %Y %H:%M:%S')
                 fi
 		
+		# Get start reading of event 1
 		inner_start_watthours=$(head -n 2 $electrical_energy_data_path | tail -n 1 | awk -F ',' '{print $NF}')
+		
+		# Get final reading of event 2
 		inner_end_watthours=$(tail -n 1 $electrical_energy_data_path | awk -F ',' '{print $NF}')
 
+		# Summary of Solnet Event Parameters
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Solarnetwork Event 1" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap Fill" | tee -a $log_path
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Start Border - BackFill Driven By Irradiance Data" | tee -a $log_path
