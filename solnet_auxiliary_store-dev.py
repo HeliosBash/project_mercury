@@ -4,14 +4,13 @@ import argparse
 from datetime import datetime
 import json
 
-def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, eventLocalDate, eventLocalTime, finalValue, startValue, token, secret):
-    """Import data from a specified node and data sources"""
+def solnet_auxiliary(node, sourceids, username, userid, cause, descriptionStr, eventDate, eventLocalDate, eventLocalTime, finalValue, startValue, token, secret):
     
     client = Client(token, secret)
     
-    id = sourceids.split("/")
+    id_components = sourceids.split("/")
     currentDateTime = datetime.now()
-    created = currentDateTime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+    updateDate = currentDateTime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
     final = {
             "wattHours" : finalValue
@@ -23,10 +22,10 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, eventL
     
     location = {
             "node": node,
-            "site": f"{id[2]}",
-            "device": f"{id[4]}/{id[5]}",
-            "system": f"{id[3]}",
-            "project": f"{id[1]}"
+            "site": f"{id_components[2]}",
+            "device": f"{id_components[4]}/{id_components[5]}",
+            "system": f"{id_components[3]}",
+            "project": f"{id_components[1]}"
             }
     
     ecogyEvent = {
@@ -36,14 +35,14 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, eventL
         "final": final,
         "start": start,
         "userId": f"{userid}",
-        "created": f"{created}",
+        "created": f"{updateDate}",
         "endDate": f"{eventDate}",
-        "localtion": location,
+        "location": location,
         "priority": 1,
         "userName": f"{username}",
         "datumType": "Reset",
         "startDate": f"{eventDate}",
-        "description": f"{cause}"
+        "description": f"{descriptionStr}"
     }
 
     pm = {
@@ -51,10 +50,11 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, eventL
         }
 
     auxiliary_data={
-        "created": f"{created}",
+        "created": f"{eventDate}",
         "nodeId": f"{node}",
         "sourceIds": f"{sourceids}",
         "type": "Reset",
+        "updated": f"{updateDate}",
         "localDate": f"{eventLocalDate}",
         "localTime": f"{eventLocalTime}",
         "final": {
@@ -74,9 +74,9 @@ def solnet_auxiliary(node, sourceids, username, userid, cause, eventDate, eventL
     
     try:
         resp = client.store_auxiliary(auxiliary_data)
-        print(resp.get)
+        print(resp)
     except Exception as e:
-        print(f"Error occurred while importing data: {e}")
+        print(f"Error occurred while storing auxiliary data: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Import data into Solar Network.")
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("--username", required=True, type=str, help="Name of user with Ecosuite access")
     parser.add_argument("--userid", required=True, type=str, help="ID of user with Ecosuite access")
     parser.add_argument("--cause", required=True, type=str, help="Cause or description of the event")
+    parser.add_argument("--description", required=True, type=str, help="Cause or description of the event")
     parser.add_argument("--utceventdate", required=True, type=str, help="event date in utc timezone")
     parser.add_argument("--localeventdate", required=True, type=str, help="event date in local timezone")
     parser.add_argument("--localeventtime", required=True, type=str, help="event time in local timezone")
@@ -95,5 +96,5 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    solnet_auxiliary(args.node, args.sourceids, args.username, args.userid, args.cause, args.utceventdate, args.localeventdate, args.localeventtime, args.finalvalue, args.startvalue, args.token, args.secret)
+    solnet_auxiliary(args.node, args.sourceids, args.username, args.userid, args.cause, args.descriptionstr, args.utceventdate, args.localeventdate, args.localeventtime, args.finalvalue, args.startvalue, args.token, args.secret)
 
