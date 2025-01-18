@@ -7,22 +7,22 @@
 - [ ] Site Latitude and Longitude Coordinates from Ecosuite
 - [ ] Site Local Timezone from Ecosuite
 
-## PYR GAP FILLER
+## GAP FILLER
 
-- [ ] Identifies PYR gaps and fills the gap with irradiance data calculated from data downloaded from solcast.
+- [ ] Identifies PYR/GEN gaps and fills the gap with irradiance data or electrical energy data driven by irradiance data, calculated from data downloaded from solcast.
 
 - [ ] Usage:		
 	```
-	pyr-gapfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [END DATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+	solnet-gap-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --startdate|-s [START DATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [END DATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
 	```
 
 - [ ] Example: 	
 	```
-	/bin/bash pyr-gapfiller --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate '2021-08-31 00:00' --enddate '2021-09-03 00:00' --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
+	/bin/bash solnet-gap-filler --node 379 --sourceid /VI/SU/B2/PYR/1 --startdate '2021-08-31 00:00' --enddate '2021-09-03 00:00' --latitude 18.343015 --longitude -64.911997 --api solcasttoken --token solnettoken --secret solnetsecret
 	```
 ## PYR FILLER
 
-- [ ] It has a similar process as the pyr gap filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data. Make sure to round up the date range to the nearest 5 minute interval. 
+- [ ] It has a similar process as the solnet-gap-filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data. Make sure to round up the date range to the nearest 5 minute interval. 
 
 - [ ] Usage:		
 	```
@@ -36,17 +36,17 @@
 
 ## ENERGY BACKFILLER
 
-- [ ] Fixes energy generation spikes caused by energy generation gaps. The total energy generation of the spike is distributed across the gap and the ratio used is driven by the irradiance data downloaded from solcast.  
+- [ ] It has a similar process as the solnet-gap-filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data. Make sure to round up the date range to the nearest 5 minute interval.
 
 - [ ] Usage:
-	```		
-	ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [STARTDATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [ENDDATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
-	```
+        ```
+        ee-backfiller --node|-n [NODE] --sourceid|-i [SOURCEID] --timezone|-z [TIMEZONE] --startdate|-s [STARTDATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [ENDDATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [Energy Spike in KWH] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+        ```
 
-- [ ] Example:	
-	```
-	/bin/bash ee-backfiller --node 372 --sourceid /G2/S2/S1/GEN/1 --startdatetime '2023-10-04 20:00' --enddatetime '2023-10-17 00:00' --latitude 29.658884 --longitude -82.334525 --api solcasttoken --token solnettoken --secret solnetsecret
-	```
+- [ ] Example:
+        ```
+        /bin/bash ee-backfiller --node 372 --sourceid /G2/S2/S1/GEN/1 --startdatetime '2023-10-04 20:00' --enddatetime '2023-10-17 00:00' --latitude 29.658884 --longitude -82.334525 --api solcasttoken --token solnettoken --secret solnetsecret
+        ```
 
 ## BAD DATA DELETER
 		
