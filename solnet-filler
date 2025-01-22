@@ -47,7 +47,7 @@ while [ $# -gt 0 ] ; do
                         secret="${1#*=}"
                         ;;
                 --help|-h)
-                        echo -n "Usage: ee-backfiller [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE]"
+                        echo -n "Usage: solnet-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE]"
                         echo -n "--startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [ENDDATETIME "
                         echo -n "in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] "
                         echo -n "--energyspike|-g [ENERGY SPIKE IN KWH] --api|-p [SOLCAST API TOKEN] --token|-k "
@@ -67,8 +67,8 @@ if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$e
         || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
 
         echo -n "Error: The following arguments are required --node --sourceid --timezone --startdatetime --enddatetime --latitude "
-        echo "--longitude --energyspike --api --token --secret" | tee -a $log_path
-	echo "For PYR Fills, set energyspike to 0"
+        echo "--longitude --energyspike --api --token --secret. For PYR Fills, set energyspike to 0" | tee -a $log_path
+
 else
 	sourceids=$(echo $sid | sed "s/\//%2F/g")
         runtime=$(date +"%Y%m%d_%H%M%S")
@@ -133,7 +133,8 @@ else
                 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Usage: solnet-filler [--help|-h] --node|-n [NODE] --sourceid|-i " | tee -a $log_path
                 		echo -n "[SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] " | tee -a $log_path
                 		echo -n "--enddatetime|-e [END DATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o " | tee -a $log_path
-                		echo "[LONGITUDE] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" | tee -a $log_path
+                		echo -n "[LONGITUDE] --energyspike|-g [ENERGY SPIKE IN KWH] --api|-p [SOLCAST API TOKEN] " | tee -a $log_path
+				echo "--token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" | tee -a $log_path
         		else
 				# Process of deleting data between the date range
 		                if [ $datum_count -gt 0 ]; then
@@ -484,7 +485,7 @@ else
                         	if [ $filsesizemb -lt 20 ] ; then
                                 	compress="disabled"
                        		else
-                                	irradiance_data_path="${file_to_import}.xz"
+					file_to_import="${file_to_import}.xz"
                                 	compress="enabled"
                         	fi
 
@@ -560,8 +561,8 @@ else
              		fi
 		fi
 	else
-		echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID"
-		break
+		echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum (GEN/PYR) from source ID provided"
 	fi
 
 fi
+
