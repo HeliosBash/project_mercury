@@ -28,7 +28,7 @@
 - [ ] Usage:
 	```
 	solnet-filler --node|-n [NODE] --sourceid|-i [SOURCEID] --timezone|-z [TIMEZONE] --startdate|-s [STARTDATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [ENDDATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [Energy Spike in KWH ; 0 for PYR Fills] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
-```
+	```
 
 - [ ] Example:
 	```
