@@ -667,32 +667,20 @@ else
 					echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
 				fi
 
-				while true
-				do
-					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would you like to proceed to download solcast (Y/N)?" 2>&1 | tee -a $log_path
-					read solcast_continue_result < /dev/tty
-
-					if [[ "${solcast_continue_result^^}" == "Y" || "${solcast_continue_result^^}" == "N" ]] ; then
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $solcast_continue_result" 2>&1 | tee -a $log_path
-						break;
-					fi
-				done
-
-				if [[ "${solcast_continue_result^^}" == "Y" ]] ; then
-					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path " | tee -a $log_path
-					echo    "in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-					sleep 10
-					/bin/bash $solcast_script_path
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Process 5 Completed" | tee -a $log_path
-				else
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Solcast Data was not downloaded. Process 5 Completed" | tee -a $log_path
-				fi
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path " | tee -a $log_path
+				echo    "in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+				
+				sleep 10
+				
+				/bin/bash $solcast_script_path
+				
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Solcast Data Downloaded. Process 5 Completed" | tee -a $log_path
 
 				echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
 
 				if [[ "$sourceids" == *"PYR"* ]]; then
 
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Computing Irradiance" | tee -a $log_path
+					echo "$(date +'%Y-%m-%d %H:%M:%S') Generating Irradiance Data" | tee -a $log_path
 
 					runtime=$(date +"%Y%m%d_%H%M%S")
 					a=0
@@ -788,7 +776,7 @@ else
 
 				else
 					echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
-					break
+					exit 1
 				fi
 				
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 1" | tee -a $log_path
@@ -818,7 +806,7 @@ else
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Process 6 completed" | tee -a $log_path
 
 				echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 7*************" | tee -a $log_path
-				echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data for solnet import" | tee -a $log_path
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data" | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Checking size of file" | tee -a $log_path
 
 				filesizebytes=$(ls -l $file_to_import | awk '{print $5}')
@@ -836,73 +824,60 @@ else
 				echo -n "--sourceids=\"$sourceids\" --timezone=\"UTC\" --compression=\"$compress\" " | tee -a $log_path
 				echo    "--filepath=\"$file_to_import\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 
+				echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
+				sleep 10
+				jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" \
+					--compression="$compress" --filepath="$file_to_import" --token="$token" --secret="$secret")
+
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py " | tee -a $log_path
+				echo -n "--job=\"import\" --action=\"preview\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
+				echo  "--jobid=\"$jobid\" to preview imported data" | tee -a $log_path
+
+				python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" \
+					--jobid="$jobid" 2>&1 | tee -a $log_path
+
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py " | tee -a $log_path
+				echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
+				echo "--jobid=\"$jobid\" will be executed" | tee -a $log_path
+
 				while true
 				do
-					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed [Y/N]: "
-					read continue_result < /dev/tty
-					if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Continue Result recevied $continue_result" | tee -a $log_path
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]:"
+					read confirm_result < /dev/tty
+
+					if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
 						break;
 					fi
 				done
 
-				if [[ "${continue_result^^}" == "Y" ]] ; then
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Executing in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-					sleep 10
-					jobid=$(python3 solnet_import.py --node="$node" --sourceids="$sourceids" --timezone="UTC" \
-						--compression="$compress" --filepath="$file_to_import" --token="$token" --secret="$secret")
-
+				if [[ "${confirm_result^^}" == "Y" ]] ; then
 					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py " | tee -a $log_path
-					echo -n "--job=\"import\" --action=\"preview\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
-					echo  "--jobid=\"$jobid\" to preview imported data" | tee -a $log_path
+					echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" " | tee -a $log_path
+					echo    "--secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+					sleep 10
 
-					python3 solnet_manage_jobs.py --job="import" --action="preview" --token="$token" --secret="$secret" \
-						--jobid="$jobid" 2>&1 | tee -a $log_path
+					python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" \
+						--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 
-					echo -n "$(date +'%Y-%m-%d %H:%M:%S') To apply staged data, python3 solnet_manage_jobs.py " | tee -a $log_path
-					echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" " | tee -a $log_path
-					echo "--jobid=\"$jobid\" will be executed" | tee -a $log_path
-
-					while true
-					do
-						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]:"
-						read confirm_result < /dev/tty
-
-						if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-							echo "$(date +'%Y-%m-%d %H:%M:%S') Confirm Result recevied $confirm_result" | tee -a $log_path
-							break;
-						fi
-					done
-
-					if [[ "${confirm_result^^}" == "Y" ]] ; then
-						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_manage_jobs.py " | tee -a $log_path
-						echo -n "--job=\"import\" --action=\"confirm\" --token=\"$token\" " | tee -a $log_path
-						echo    "--secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
-						sleep 10
-
-						python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" \
-							--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
-
-						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_manage_jobs.py " | tee -a $log_path
-						echo -n "--job=\"import\" --action=\"list\" --token=\"$token\" " | tee -a $log_path
-						echo    "--secret=\"$secret\" to view import progress" | tee -a $log_path
-					else
-						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. " | tee -a $log_path
-						echo -n "Deleting Staged Data. Executing python3 solnet_manage_jobs.py " | tee -a $log_path
-						echo -n "--job=\"import\" --action=\"delete\" --token=\"$token\" " | tee -a $log_path
-						echo    "--secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
-						sleep 10
-						python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" \
-							--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
-					fi
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_manage_jobs.py " | tee -a $log_path
+					echo -n "--job=\"import\" --action=\"list\" --token=\"$token\" " | tee -a $log_path
+					echo    "--secret=\"$secret\" to view import progress" | tee -a $log_path
 				else
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Process 7 Aborted" | tee -a $log_path
+					echo -n "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. " | tee -a $log_path
+					echo -n "Deleting Staged Data. Executing python3 solnet_manage_jobs.py " | tee -a $log_path
+					echo -n "--job=\"import\" --action=\"delete\" --token=\"$token\" " | tee -a $log_path
+					echo    "--secret=\"$secret\" --jobid=\"$jobid\" in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+					sleep 10
+					python3 solnet_manage_jobs.py --job="import" --action="delete" --token="$token" \
+						--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 				fi
 			fi
 		fi
 
 	else
 		echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum (GEN/PYR) from source ID provided"
+		exit 1
         fi
 
 fi
