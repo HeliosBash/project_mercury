@@ -163,7 +163,7 @@ else
 					# Compares next iteration of dates to the expected date which is a day ahead, if it matches then not a start
 					# gap date, else a possible start gap date
 					if [[ "$localDate" != "$expected_next_localDate" ]] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] \
-						|| [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]] ; then
+						|| [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] ; then # || [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]] ; then
 						# Next process show that once a possible start gap date is identified, its not yet definitive that the next
 						# date iteration is the end gap date as it could be bad data where irradiance hours is zero or null
 
@@ -180,7 +180,7 @@ else
 
 
 						while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] || \
-							 [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]]
+							 [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] #|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]]
 						do
 							next_possible_gap_line_number=$((next_possible_gap_line_number+1))
 							if [[ "$sourceids" == *"PYR"* ]]; then
@@ -294,7 +294,8 @@ else
 					fi
 
 					if [[ "$localDateTime" != "$expected_next_hour" ]] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] \
-						|| [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]] ; then
+						|| [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] ; then
+											#|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]] ; then
 
 						if [[ "$localDateTime" != "$expected_next_hour" ]] ; then
 							start_gap_line_number=$((current_line_number-1))
@@ -304,7 +305,7 @@ else
 						fi
 					
 						while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] || \
-							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]]
+							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]  #|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]]
 						do
 							next_possible_gap_line_number=$((next_possible_gap_line_number+1))
 							if [[ "$sourceids" == *"PYR"* ]]; then
@@ -414,7 +415,7 @@ else
 					fi
 
 					if [[ $utc_datetime_difference -gt 3601 ]] || [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] \
-						|| [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]] ; then
+						|| [[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] ; then # || [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]] ; then
 
 						if [ $utc_datetime_difference -gt 3601 ] ; then
 							start_gap_line_number=$((current_line_number-1))
@@ -424,7 +425,7 @@ else
 						fi
 
 						while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] || \
-							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]|| [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]]
+							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]  # || [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]]
 						do
 							next_possible_gap_line_number=$((next_possible_gap_line_number+1))
 							if [[ "$sourceids" == *"PYR"* ]]; then
