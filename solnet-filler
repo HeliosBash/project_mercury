@@ -146,10 +146,10 @@ else
                         		# Commands that will be executed to delete data
                         		echo "$(date +'%Y-%m-%d %H:%M:%S') Datum count in gap is greater than 0. Preview and " | tee -a $log_path
                         		echo "Confirm commands below will be executed:" | tee -a $log_path
-                        		echo -n "Preview: python3 solnet_expire_preview.py --node=\"$nodeId\" " | tee -a $log_path
+                        		echo -n "Preview: python3 solnet_expire_preview.py --node=\"$node\" " | tee -a $log_path
                         		echo -n "--sourceids=\"$sourceids\" --localstartdate=\"$formatted_localstartdate\" " | tee -a $log_path
                         		echo "--localenddate=\"$formatted_localenddate\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
-                        		echo -n "Confirm: python3 solnet_expire_confirm.py --node=\"$nodeId\" " | tee -a $log_path
+                        		echo -n "Confirm: python3 solnet_expire_confirm.py --node=\"$node\" " | tee -a $log_path
                         		echo -n "--sourceids=\"$sourceids\" --localstartdate=\"$formatted_localstartdate\" " | tee -a $log_path
                         		echo "--localenddate=\"$formatted_localenddate\" --token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 				
@@ -171,12 +171,12 @@ else
 
                                			# Preview of the number of data to be deleted
                                 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py "
-                                		echo -n "--node=\"$nodeId\" --sourceids=\"$sourceids\" " | tee -a $log_path
+                                		echo -n "--node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
                                 		echo -n "--localstartdate=\"$formatted_localstartdate\" " | tee -a $log_path
                                 		echo -n "--localenddate=\"$formatted_localenddate\" " | tee -a $log_path
                                 		echo "--token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 
-                                		result_count=$(python3 solnet_expire_preview.py --node="$nodeId" --sourceids="$sourceids" \
+                                		result_count=$(python3 solnet_expire_preview.py --node="$node" --sourceids="$sourceids" \
                                         		--localstartdate="$formatted_localstartdate" --localenddate="$formatted_localenddate" \
                                         		--token="$token" --secret="$secret")
 
@@ -195,13 +195,13 @@ else
 
                                         		# Actual delete process with 10 second delay to give user a chance to cancel process
                                         		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_confirm.py " | tee -a $log_path
-                                        		echo -n "--node=\"$nodeId\" --sourceids=\"$sourceids\" " | tee -a $log_path
+                                        		echo -n "--node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
                                        			echo -n "--localstartdate=\"$formatted_localstartdate\" " | tee -a $log_path
                                         		echo -n "--localenddate=\"$formatted_localenddate\" --token=\"$token\"" | tee -a $log_path
                                         		echo "--secret=\"$secret\" in 10 seconds. Hit CTRL + C to Cancel" | tee -a $log_path
                                         		sleep 10
 
-                                        		python3 solnet_expire_confirm.py --node="$nodeId" --sourceids="$sourceids" \
+                                        		python3 solnet_expire_confirm.py --node="$node" --sourceids="$sourceids" \
                                                 		--localstartdate="$formatted_localstartdate" --localenddate="$formatted_localenddate" \
                                                 		--token="$token" --secret="$secret" 2>&1 | tee -a $log_path
 
