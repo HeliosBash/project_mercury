@@ -506,14 +506,51 @@ else
                                 done
                         
 				if [[ "${confirm_result^^}" == "Y" ]] ; then
-                                	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 " | tee -a $log_path
-                                	echo -n "solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" " | tee -a $log_path
-                                	echo -n "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" " | tee -a $log_path
-                                	echo    "in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
-                                	sleep 10
+
+					if [ $datum_count -gt 0 ]; then
+
+						echo "$(date +'%Y-%m-%d %H:%M:%S') Checking if expire process has completed." | tee -a $log_path
+						
+						result_count=$(python3 solnet_expire_preview.py --node="$node" --sourceids="$sourceids" \
+                                                --localstartdate="$formatted_localstartdate" --localenddate="$formatted_localenddate" \
+                                                --token="$token" --secret="$secret")
+
+                                               	if [ $result_count -eq 0 ] ; then
+                                			
+							echo "$(date +'%Y-%m-%d %H:%M:%S') Expire result count: $result_count. Process completed." | tee -a $log_path
+
+							echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 " | tee -a $log_path
+                                			echo -n "solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" " | tee -a $log_path
+                                			echo -n "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" " | tee -a $log_path
+                                			echo    "in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+                                			sleep 10
 				
-					python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token" --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
-                                else
+							python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token"\
+							       	--secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+						
+							echo -n "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_manage_jobs.py " | tee -a $log_path
+        	                                        echo -n "--job=\"import\" --action=\"list\" --token=\"$token\" " | tee -a $log_path
+	                                                echo    "--secret=\"$secret\" to view import progress" | tee -a $log_path
+
+						else
+							echo "$(date +'%Y-%m-%d %H:%M:%S') Process aborted. Expire process not completed. Run manually." | tee -a $log_path
+						fi
+					else
+						 echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 " | tee -a $log_path
+                                                 echo -n "solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" " | tee -a $log_path
+                                                 echo -n "--token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" " | tee -a $log_path
+                                                 echo    "in 10 seconds. Hit CTRL+C to cancel" | tee -a $log_path
+                                                 sleep 10
+
+                                                 python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token"\
+							 --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
+						 
+						 echo -n "$(date +'%Y-%m-%d %H:%M:%S') Execute python3 solnet_manage_jobs.py " | tee -a $log_path
+                                                 echo -n "--job=\"import\" --action=\"list\" --token=\"$token\" " | tee -a $log_path
+                                                 echo    "--secret=\"$secret\" to view import progress" | tee -a $log_path
+
+					fi
+				else
                                 	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Import Process Aborted. " | tee -a $log_path
                                 	echo -n "Deleting Staged Data. Executing python3 " | tee -a $log_path
                                 	echo -n "solnet_manage_jobs.py --job=\"import\" --action=\"delete\" " | tee -a $log_path
