@@ -149,7 +149,7 @@ else
 						next_wattHours=1
 					elif [[ "$sourceids" == *"GEN"* ]]; then
 						next_watts=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | awk -F "," \
-							'{print (NF-19)}')
+							'{print $(NF-19)}')
 						next_wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $day_data_path | awk -F "," \
 							'{print $(NF-2)}')
 						next_irradiance=1
@@ -192,7 +192,7 @@ else
 								next_wattHours=1
 							elif [[ "$sourceids" == *"GEN"* ]]; then
 								next_watts=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
-									$day_data_path | awk -F "," '{print (NF-19)}')
+									$day_data_path | awk -F "," '{print $(NF-19)}')
 								next_wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
 									$day_data_path | awk -F "," '{print $(NF-2)}')
 								next_irradiance=1
@@ -283,7 +283,7 @@ else
 						next_wattHours=1
 					elif [[ "$sourceids" == *"GEN"* ]]; then
 						next_watts=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | awk -F "," \
-							'{print (NF-19)}')
+							'{print $(NF-19)}')
 						next_wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | awk -F "," \
 							'{print $(NF-2)}')
 						next_irradiance=1
@@ -317,7 +317,7 @@ else
 								next_wattHours=1
 							elif [[ "$sourceids" == *"GEN"* ]]; then
 								next_watts=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
-									$hour_data_path | awk -F "," '{print (NF-19)}')
+									$hour_data_path | awk -F "," '{print $(NF-19)}')
 								next_wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
 									$hour_data_path | awk -F "," '{print $(NF-2)}')
 								next_irradiance=1
@@ -362,6 +362,7 @@ else
 			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing : python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " 2>&1 | tee -a $log_path
 			echo -n "--startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " 2>&1 | tee -a $log_path
 			echo    "--token=\"$token\" --secret=\"$secret\"" 2>&1 | tee -a $log_path
+			
 			first_row_minutes=0
 			gap_in_minutes=0
 			minute_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_datum_minutes"
@@ -404,7 +405,7 @@ else
 						next_wattHours=1
 					elif [[ "$sourceids" == *"GEN"* ]]; then
 						next_watts=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," \
-							'{print (NF-19)}')
+							'{print $(NF-19)}')
 						next_wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | awk -F "," \
 							'{print $(NF-2)}')
 						next_irradiance=1
@@ -425,7 +426,7 @@ else
 						fi
 
 						while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] || \
-							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]]  # || [[ $next_watts == 0 ]] || [[ $next_wattHours == 0 ]]
+							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] && [[ $next_possible_gap_line_number -ne $((total_lines+1)) ]]
 						do
 							next_possible_gap_line_number=$((next_possible_gap_line_number+1))
 							if [[ "$sourceids" == *"PYR"* ]]; then
@@ -437,7 +438,7 @@ else
 								next_wattHours=1
 							elif [[ "$sourceids" == *"GEN"* ]]; then
 								next_watts=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
-									$minute_data_path | awk -F "," '{print (NF-19)}')
+									$minute_data_path | awk -F "," '{print $(NF-19)}')
 								next_wattHours=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
 									$minute_data_path | awk -F "," '{print $(NF-2)}')
 								next_irradiance=1
@@ -449,47 +450,54 @@ else
 
 						done
 
-						start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
-							cut -d "," -f 1 )
-						end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
-							cut -d "," -f 1 )
+						if [[ $next_possible_gap_line_number -ne $((total_lines+1)) ]] ; then
 
-						start_gap_halfsec=$(echo $start_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
-						end_gap_halfsec=$(echo $end_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
+							start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+								cut -d "," -f 1 )
+							end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+								cut -d "," -f 1 )
 
-						start_gap_localdatetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
-							cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${start_gap_halfsec}/g")
-						end_gap_localdatetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
-							cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${end_gap_halfsec}/g")
+							start_gap_halfsec=$(echo $start_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
+							end_gap_halfsec=$(echo $end_gap_utc_datetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
+
+							start_gap_localdatetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+								cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${start_gap_halfsec}/g")
+							end_gap_localdatetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+								cut -d "," -f 2,3 | sed "s/,/ /g;s/$/:${end_gap_halfsec}/g")
 
 
-						if [[ "$sourceids" == *"PYR"* ]]; then
-							start_gap_irradiancehours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
-							cut -d "," -f 7 )
-							end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
-							cut -d "," -f 7 )
-						elif [[ "$sourceids" == *"GEN"* ]]; then
-							start_gap_watthours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' \
-							$minute_data_path | cut -d "," -f 23 )
-							end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" \
-							'{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
+							if [[ "$sourceids" == *"PYR"* ]]; then
+								start_gap_irradiancehours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+								cut -d "," -f 7 )
+								end_gap_irradiancehours=$( awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
+								cut -d "," -f 7 )
+							elif [[ "$sourceids" == *"GEN"* ]]; then
+								start_gap_watthours=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' \
+								$minute_data_path | cut -d "," -f 23 )
+								end_gap_watthours=$( awk -v num="$next_possible_gap_line_number" \
+								'{if(NR==num) print $0}' $minute_data_path | cut -d "," -f 23 )
 
-							energyspike=$((end_gap_watthours - start_gap_watthours))
-						else
-							echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
+								energyspike=$((end_gap_watthours - start_gap_watthours))
+							else
+								echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
+								break
+
+							fi
+
+
+							echo -n "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_utc_datetime and " | tee -a $log_path
+							echo "$end_gap_utc_datetime" | tee -a $log_path
+							echo -n "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localdatetime and " | tee -a $log_path
+							echo "$end_gap_localdatetime" | tee -a $log_path
+
+							start_gap=$start_gap_utc_datetime
+							end_gap=$end_gap_utc_datetime
+							gap_in_minutes=1
 							break
-
+						else
+							gap_in_minutes=0
+	                                                break
 						fi
-
-						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Gap in UTC Found between $start_gap_utc_datetime and " | tee -a $log_path
-						echo "$end_gap_utc_datetime" | tee -a $log_path
-						echo -n "$(date +'%Y-%m-%d %H:%M:%S') Gap in Local Found between $start_gap_localdatetime and " | tee -a $log_path
-						echo "$end_gap_localdatetime" | tee -a $log_path
-
-						start_gap=$start_gap_utc_datetime
-						end_gap=$end_gap_utc_datetime
-						gap_in_minutes=1
-						break
 					else
 						previous_utc_datetime_epoch=$utc_datetime_epoch
 					fi
