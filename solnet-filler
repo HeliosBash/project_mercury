@@ -321,9 +321,8 @@ else
                                         		echo "$node,$sid,$periodstart_formatted,$ghi,$ghi_new" >> $irradiance_data_path
                                 		fi
 					done < $solcast_csv_path
+					
 					file_to_import=$irradiance_data_path
-
-
 
 				elif [[ "$sourceids" == *"GEN"* ]] ; then
 					a=0
