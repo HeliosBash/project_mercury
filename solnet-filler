@@ -80,6 +80,10 @@ else
 		if [[ "$sourceids" == *"GEN"* ]] && [ $energyspike == 0 ] ; then
                         echo "$(date +'%Y-%m-%d %H:%M:%S') For GEN Fills, energyspike should be greater than 0"
 		else
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash solnet-filler --node $node --sourceid $sid " | tee -a $log_path
+                        echo -n "--timezone $timezone --startdatetime $startdatetime --enddatetime $enddatetime " | tee -a $log_path
+                        echo -n "--latitude $lat --longitude $long --energyspike $energyspike " | tee -a $log_path
+                        echo    "--api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 			# Check timezone format if its valid
 
@@ -394,8 +398,11 @@ else
                                		sne1_final_reading=0
                         	# If there is datum before the start of the gap, final reading is the last datum entry and start and end time for event 1 is 5 seconds after the last datum entry
                         	else
-                                	sne1_startlocaldate=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $2}' )
+                                	sne1_utcdatetime=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $1}' )
+					sne1_startlocaldate=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $2}' )
                                 	sne1_startlocaltime=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $3}' )
+                                        sne1_utc_halfsec=$(echo $sne1_utcdatetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
+
                                 	if [[ "$sourceids" == *"PYR"* ]]; then
 						sne1_final_reading=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $NF}')
                                 	elif [[ "$sourceids" == *"GEN"* ]]; then
@@ -404,7 +411,7 @@ else
 						echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
 						sne1_final_reading="Error Unable to determine type of datum from source ID"
 					fi
-					snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime") \
+					snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime:$sne1_utc_halfsec") \
 						+ 5 seconds" +'%b %d, %Y %H:%M:%S')
                         	fi
 	
@@ -436,9 +443,12 @@ else
                         	# If there is datum after the end of the gap, final reading is the first datum entry and the start and end time 
 				# for event 2 is 5 seconds before the first datum entry
                         	else
-                                	sne2_endlocaldate=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $2}' )
+                                	sne2_utcdatetime=$(cat $sne2_datum | tail -n 1 | awk -F ',' '{print $1}' )
+					sne2_endlocaldate=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $2}' )
                                 	sne2_endlocaltime=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $3}' )
-                                	if [[ "$sourceids" == *"PYR"* ]]; then
+                                	sne2_utc_halfsec=$(echo $sne2_utcdatetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
+					
+					if [[ "$sourceids" == *"PYR"* ]]; then
                                          	sne2_start_reading=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $NF}')
                                         elif [[ "$sourceids" == *"GEN"* ]]; then
 						sne2_start_reading=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $(NF-2)}')
@@ -446,8 +456,9 @@ else
                                                 echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
                                                 sne2_start_reading="Error Unable to determine type of datum from source ID"
                                         fi
-                                	snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d \
-						"$sne2_endlocaldate $sne2_endlocaltime") - 5 seconds" +'%b %d, %Y %H:%M:%S')
+                                	
+					snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d \
+						"$sne2_endlocaldate $sne2_endlocaltime:$sne2_utc_halfsec") - 5 seconds" +'%b %d, %Y %H:%M:%S')
                         	fi
 
                         	# Get start reading of event 1

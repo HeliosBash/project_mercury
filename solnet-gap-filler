@@ -88,8 +88,8 @@ else
 			echo "--token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]" | tee -a $log_path
 		
 		else
-			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash solnet-gap-filler --node $node --sourceid $sid "
-			echo -n "--startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long "
+			echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executed: /bin/bash solnet-gap-filler --node $node --sourceid $sid " | tee -a $log_path
+			echo -n "--startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long " | tee -a $log_path
 			echo    "--api $solcast_api_token --token $token --secret $secret" 2>&1 | tee -a $log_path
 
 			# Process 1 extracts Solnet PYR/GEN data in day aggregates
