@@ -221,6 +221,7 @@ else
 
 					else
 						expected_next_localDate=$(date -d "$localDate + 1 day" +%Y-%m-%d)
+
 					fi
 				fi
 			done < $day_data_path
@@ -345,7 +346,6 @@ else
 
 					else
 						expected_next_hour=$(date --date "$(date -Iseconds -d "$localDate $localTime") + 1 hour" +'%Y-%m-%d %H:00')
-
 					fi
 				fi
 			done < $hour_data_path
@@ -391,10 +391,10 @@ else
 					current_line_number=$(cat -n $minute_data_path | grep "$UTCDateTime" | awk '{print $1 }')
 					next_possible_gap_line_number=$((current_line_number+1))
 
-					if [[ $next_possible_gap_line_number == $((total_lines+1)) ]] ; then
-						gap_in_minutes=0
-						break
-					fi
+					#if [[ $next_possible_gap_line_number == $((total_lines+1)) ]] ; then
+					#	gap_in_minutes=0
+					#	break
+					#fi
 
 					if [[ "$sourceids" == *"PYR"* ]]; then
 						next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' $minute_data_path | \
@@ -426,9 +426,10 @@ else
 						fi
 
 						while [[ -z "$next_irradiance" ]] || [[ -z "$next_irradianceHours" ]] || \
-							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] && [[ $next_possible_gap_line_number -ne $((total_lines+1)) ]]
+							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] && \
+							[[ $next_possible_gap_line_number -ne $((total_lines+1)) ]]
 						do
-							next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+							#next_possible_gap_line_number=$((next_possible_gap_line_number+1))
 							if [[ "$sourceids" == *"PYR"* ]]; then
 								next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
 									$minute_data_path | awk -F "," '{print $(NF-1)}' )
@@ -500,6 +501,11 @@ else
 						fi
 					else
 						previous_utc_datetime_epoch=$utc_datetime_epoch
+						if [[ $next_possible_gap_line_number == $((total_lines+1)) ]] ; then
+                                                	gap_in_minutes=0
+                                                	break
+						fi
+
 					fi
 
 				fi
@@ -508,6 +514,7 @@ else
 			if [ $gap_in_minutes -eq 0 ] ; then
 				echo "$(date +'%Y-%m-%d %H:%M:%S') No Gaps Found in datum with aggregation in Minutes" | tee -a $log_path
 			else
+
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap in UTC: $start_gap" | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Start Gap in Local DateTime:  $start_gap_localdatetime" | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap In UTC: $end_gap" | tee -a $log_path
@@ -521,6 +528,8 @@ else
 					echo "$(date +'%Y-%m-%d %H:%M:%S') End Gap wattHours: $end_gap_watthours" | tee -a $log_path
 				fi
 				
+				sleep 10
+
 				echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 4*************" | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for data between the gap. Adding 5 second offset" | tee -a $log_path
 
@@ -618,9 +627,6 @@ else
 				echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 5*************" | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Preparing Solcast Query Data" | tee -a $log_path
 
-				# File where the python commands to download solcast data will be stored.
-				solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_script.sh"
-
 				# File where the result of the python commands to download solcast data will be stored.
 				solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
 				>$solcast_script_path
@@ -628,61 +634,15 @@ else
 				solcast_start=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' )
 				solcast_end=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ'  )
 
-				solcast_start_epoch=$(date -d "$solcast_start" +%s)
-				solcast_end_epoch=$(date -d "$solcast_end" +%s)
+				echo -n "Executing python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
+                                echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
+                                echo    "--token=\"$solcast_api_token\" > $solcast_csv_path in 10 seconds" | tee -a $solcast_script_path
 
-				date_range_diff_seconds=$gap_num_seconds
+                                sleep 10
 
-				# This condition checks if the date range exceeds the limit of 2592000  seconds which is 30 days
-				# since there is a 30 day limit on date range per solcast download.
+                                python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" \
+                                        --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" > $solcast_csv_path
 
-				if [ $date_range_diff_seconds -gt 2592000  ]; then
-
-					solcast_partial_end=$(date --date "$solcast_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
-					echo "$(date +'%Y-%m-%d %H:%M:%S') Date range exceeds 30 days, creating multiple solcast queries" | tee -a $log_path
-					echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-					echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_partial_end\" " | tee -a $solcast_script_path
-					echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
-
-					solcast_partial_start=$(date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
-					solcast_partial_epoch=$(date -d "$solcast_partial_start" +%s )
-					date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
-
-					while [ $date_range_diff_seconds -gt 2592000 ]
-					do
-						if [ $date_range_diff_seconds -gt 2592000 ]; then
-
-							solcast_partial_end=$(date --date "$solcast_partial_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
-							echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-							echo -n "--startdate=\"$solcast_partial_start\" --enddate=\"$solcast_partial_end\" " | tee -a $solcast_script_path
-							echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
-
-							solcast_partial_start=$(date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
-							solcast_partial_epoch=$(date -d "$solcast_partial_start" +%s )
-							date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
-						else
-							solcast_partial_start=$(date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
-							break
-						fi
-					done
-
-					echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-					echo -n "--startdate=\"$solcast_partial_start\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
-					echo    "--token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
-
-				else
-					echo -n "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $solcast_script_path
-					echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_end\" " | tee -a $solcast_script_path
-					echo    "--token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
-				fi
-
-				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing /bin/bash $solcast_script_path " | tee -a $log_path
-				echo    "in 10 seconds. Hit Ctrl + C to Cancel" | tee -a $log_path
-				
-				sleep 10
-				
-				/bin/bash $solcast_script_path
-				
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Solcast Data Downloaded. Process 5 Completed" | tee -a $log_path
 
 				echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 6*************" 2>&1 | tee -a $log_path
