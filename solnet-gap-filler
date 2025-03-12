@@ -331,12 +331,12 @@ else
 						done
 						
 						start_gap_utc_datetime=$(awk -v num="$start_gap_line_number" '{if(NR==num) print $0}' $hour_data_path | cut -d "," -f 1 )
-						start_gap_utc_datetime_hour_before=$(date --date "$(date -Iseconds -d "$start_gap_utc_datetime") - 1 hour" \
+						start_gap_utc_datetime_hour_before=$(TZ=UTC date --date "$(date -Iseconds -d "$start_gap_utc_datetime") - 1 hour" \
 							+'%Y-%m-%d %H:00')
 
 						end_gap_utc_datetime=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
 							$hour_data_path | cut -d "," -f 1 )
-						end_gap_utc_datetime_hour_after=$(date --date "$(date -Iseconds -d "$end_gap_utc_datetime") + 1 hour" \
+						end_gap_utc_datetime_hour_after=$(TZ=UTC date --date "$(date -Iseconds -d "$end_gap_utc_datetime") + 1 hour" \
 							+'%Y-%m-%d %H:00')
 
 						startdate=$(echo $start_gap_utc_datetime_hour_before | sed "s/ /T/g ; s/:/%3A/g ; s/Z//g")
@@ -429,7 +429,7 @@ else
 							[[ -z "$next_watts" ]] || [[ -z "$next_wattHours" ]] && \
 							[[ $next_possible_gap_line_number -ne $((total_lines+1)) ]]
 						do
-							#next_possible_gap_line_number=$((next_possible_gap_line_number+1))
+							next_possible_gap_line_number=$((next_possible_gap_line_number+1))
 							if [[ "$sourceids" == *"PYR"* ]]; then
 								next_irradiance=$(awk -v num="$next_possible_gap_line_number" '{if(NR==num) print $0}' \
 									$minute_data_path | awk -F "," '{print $(NF-1)}' )
@@ -533,12 +533,12 @@ else
 				echo "$(date +'%Y-%m-%d %H:%M:%S') ***********PROCESS 4*************" | tee -a $log_path
 				echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for data between the gap. Adding 5 second offset" | tee -a $log_path
 
-				start_gap_epoch=$(date -d "$start_gap" +%s)
-				end_gap_epoch=$(date -d "$end_gap" +%s)
+				start_gap_epoch=$(TZ=UTC date -d "$start_gap" +%s)
+				end_gap_epoch=$(TZ=UTC date -d "$end_gap" +%s)
 
-				new_start_gap=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+				new_start_gap=$(TZ=UTC date --date "$(TZ=UTC date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
 				new_start_gap_local=$(date --date "$(date -Iseconds -d "$start_gap_localdatetime") + 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
-				new_end_gap=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
+				new_end_gap=$(TZ=UTC date --date "$(TZ=UTC date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
 				new_end_gap_local=$(date --date "$(date -Iseconds -d "$end_gap_localdatetime") - 5 seconds" +'%Y-%m-%dT%H:%M:%S' | sed "s/:/%3A/g" )
 
 				gap_num_seconds=$((end_gap_epoch - start_gap_epoch))
@@ -629,10 +629,9 @@ else
 
 				# File where the result of the python commands to download solcast data will be stored.
 				solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${new_start_gap}_${new_end_gap}_solcast_result.csv"
-				>$solcast_script_path
 
-				solcast_start=$(date --date "$(date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' )
-				solcast_end=$(date --date "$(date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ'  )
+				solcast_start=$(TZ=UTC date --date "$(TZ=UTC date -Iseconds -d "$start_gap") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ' )
+				solcast_end=$(TZ=UTC date --date "$(TZ=UTC date -Iseconds -d "$end_gap") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ'  )
 
 				echo -n "Executing python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" " | tee -a $log_path
                                 echo -n "--startdate=\"$solcast_start\" --enddate=\"$solcast_end\" " | tee -a $log_path

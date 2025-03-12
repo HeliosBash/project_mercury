@@ -246,8 +246,14 @@ else
 					runtime=$(date +"%Y%m%d_%H%M%S")
                      	   		irradiance_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_PYRGAP_SolNetIMport_${runtime}.csv"
 					
+					echo -n "Executing python3 calculate_irradiancehours.py --solcast_csv_path=\"$solcast_csv_path\" " | tee -a $log_path
+                                        echo -n "--irradiance_data_path=\"$irradiance_data_path\" " | tee -a $log_path
+                                        echo    "--node=\"$node\" --sid=\"$sid\" in 10 seconds" | tee -a $log_path
+
 					python3 calculate_irradiancehours.py --solcast_csv_path="$solcast_csv_path" --irradiance_data_path="$irradiance_data_path" \
-						--node="$node" --sid="$sourceids"
+						--node="$node" --sid="$sid"
+
+					sleep 10
 
 					file_to_import=$irradiance_data_path
 
@@ -256,8 +262,14 @@ else
 					electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
                 			runtime=$(date +"%Y%m%d_%H%M%S")
 					
+					echo -n "Executing python3 calculate_watthours.py --solcast_csv_path=\"$solcast_csv_path\" " | tee -a $log_path
+                                	echo -n "--energyspike=$energyspike --node=\"$node\" " | tee -a $log_path
+                                	echo    "--sourceids=\"$sid\" --output=\"$electrical_energy_data_path\" in 10 seconds" | tee -a $log_path
+
+					sleep 10 
+
 					python3 calculate_watthours.py --solcast_csv_path="$solcast_csv_path" --energyspike=$energyspike --node="$node" \
-						--sourceids="$sourceids" --output="$electrical_energy_data_path"
+						--sourceids="$sid" --output="$electrical_energy_data_path"
 
 					file_to_import=$electrical_energy_data_path
         			else
