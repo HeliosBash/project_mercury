@@ -680,10 +680,10 @@ else
 
 					snevent1_final_reading=$start_gap_irradiancehours
 					snevent1_start_reading=$inner_start_gap_irradiancehours
-					snevent1_description="Start Border - Fill for PYR Gap"
+					snevent1_description="Fill for PYR Gap - Start Border"
 					snevent2_final_reading=$inner_end_gap_irradiancehours
 					snevent2_start_reading=$end_gap_irradiancehours
-					snevent2_description="End Border - Fill for PYR Gap"
+					snevent2_description="Fill for PYR Gap - End Border"
 					file_to_import=$irradiance_data_path
 
 				elif [[ "$sourceids" == *"GEN"* ]]; then
@@ -725,10 +725,10 @@ else
 
 					snevent1_final_reading=$start_gap_watthours
 					snevent1_start_reading=$inner_start_gap_watthours
-					snevent1_description="Start Border - Energy Gap Backfill driven by Irradiance Data"
+					snevent1_description="Fill For GEN Gap - Start Border"
 					snevent2_final_reading=$inner_end_gap_watthours
 					snevent2_start_reading=$end_gap_watthours
-					snevent2_description="End Border - Energy Gap Backfill driven by Irradiance Data"
+					snevent2_description="Fill for GEN Gap - End Border"
 					file_to_import=$electrical_energy_data_path
 
 				else
