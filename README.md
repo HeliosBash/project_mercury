@@ -166,12 +166,11 @@
         ```
 
 - [ ]   Example:
-        ```
-        #  python3 solnet_get_auxiliary.py --node="672" --sourceids="/CT13/OJBF/R1/GEN/1" --startdate="2024-06-01 00:00:00" --enddate="2024-07-30 23:59:59" --token="BMNrUBDxngT80t1oQO.A" --secret="uJ9E4jdcreFaS3vwsVLRlnuK"
+	```
+	#  python3 solnet_get_auxiliary.py --node="672" --sourceids="/CT13/OJBF/R1/GEN/1" --startdate="2024-06-01 00:00:00" --enddate="2024-07-30 23:59:59" --token="BMNrUBDxngT80t1oQO.A" --secret="uJ9E4jdcreFaS3vwsVLRlnuK"
 	== Reset Data Summary ==
 	Total Results: 2
 	Reset Events: 2
-
 	--- Reset Event 1 ---
 	Created: 2024-06-27 03:59:38Z
 	Node ID: 672
@@ -191,10 +190,8 @@
 	Cause: Discontinuity due to Gap
 	Description: Discontinuity due to Gap
 	User: Data Support
+
 	```
-
-
-
 
 ## Solnet Manage Jobs
 		
