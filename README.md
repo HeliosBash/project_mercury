@@ -167,7 +167,7 @@
 
 - [ ]   Example:
 	```
-	#  python3 solnet_get_auxiliary.py --node="672" --sourceids="/CT13/OJBF/R1/GEN/1" --startdate="2024-06-01 00:00:00" --enddate="2024-07-30 23:59:59" --token="BMNrUBDxngT80t1oQO.A" --secret="uJ9E4jdcreFaS3vwsVLRlnuK"
+	#  python3 solnet_get_auxiliary.py --node="672" --sourceids="/CT13/OJBF/R1/GEN/1" --startdate="2024-06-01 00:00:00" --enddate="2024-07-30 23:59:59" --token="foo" --secret="foobar"
 	== Reset Data Summary ==
 	Total Results: 2
 	Reset Events: 2
