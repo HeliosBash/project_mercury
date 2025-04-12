@@ -402,7 +402,7 @@ class Client:
         path = "/solaruser/api/v1/sec/datum/auxiliary/"
         params = paramstr
         body = ""
-        headers = { "content-type" : "application/x-www-form-urlencoded; charset=UTF-8" , "host": "data.solarnetwork.net", "x-sn-date": date}
+        headers = { "content-type" : "application/json; charset=UTF-8" , "host": "data.solarnetwork.net", "x-sn-date": date}
         auth = generate_auth_header(
             self.token, self.secret, "DELETE", path, params, headers, body, now
         )
@@ -425,4 +425,33 @@ class Client:
 
         return v["data"]
 
+    def get_auxiliary(self, paramstr: str) -> str:
+
+        now = datetime.utcnow()
+        date = get_x_sn_date(now)
+        path = "/solaruser/api/v1/sec/datum/auxiliary"
+        params = paramstr
+        body = ""
+        headers = { "host": "data.solarnetwork.net", "x-sn-date": date}
+        auth = generate_auth_header(
+            self.token, self.secret, "GET", path, params, headers, "", now
+        )
+
+        url = 'https://data.solarnetwork.net/solaruser/api/v1/sec/datum/auxiliary?' + params
+
+        resp = requests.get(
+            url,
+            headers={
+                "host": "data.solarnetwork.net",
+                "x-sn-date": date,
+                "Authorization": auth,
+            },
+        )
+
+        v = resp.json()
+        return v
+        #if v["success"] != True:
+        #    raise Exception("Unsuccessful API call")
+#
+        #return v["data"]
 

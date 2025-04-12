@@ -156,6 +156,46 @@
 
 	```
 
+## Get Auxiliary Records
+
+- [ ]   Retrieves Auxiliary Records
+
+- [ ]   Usage:
+        ```
+        python3 solnet_get_auxiliary.py --node=[nodeid] --sourceids=[sourceids] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] --token="foo" --secret="foobar"
+        ```
+
+- [ ]   Example:
+        ```
+        #  python3 solnet_get_auxiliary.py --node="672" --sourceids="/CT13/OJBF/R1/GEN/1" --startdate="2024-06-01 00:00:00" --enddate="2024-07-30 23:59:59" --token="BMNrUBDxngT80t1oQO.A" --secret="uJ9E4jdcreFaS3vwsVLRlnuK"
+	== Reset Data Summary ==
+	Total Results: 2
+	Reset Events: 2
+
+	--- Reset Event 1 ---
+	Created: 2024-06-27 03:59:38Z
+	Node ID: 672
+	Source ID: /CT13/OJBF/R1/GEN/1
+	Local Date/Time: 2024-06-26 23:59:38
+	Watt Hours: 0 → 726000
+	Cause: Discontinuity due to Gap
+	Description: Discontinuity due to Gap
+	User: Data Support
+
+	--- Reset Event 2 ---
+	Created: 2024-07-19 03:55:05Z
+	Node ID: 672
+	Source ID: /CT13/OJBF/R1/GEN/1
+	Local Date/Time: 2024-07-18 23:55:05
+	Watt Hours: 0 → 34448000
+	Cause: Discontinuity due to Gap
+	Description: Discontinuity due to Gap
+	User: Data Support
+	```
+
+
+
+
 ## Solnet Manage Jobs
 		
 - [ ] 	Lists and delete expire jobs. It also wiews, previews, confirms, and deletes import jobs.   
