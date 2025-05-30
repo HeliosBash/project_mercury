@@ -192,7 +192,7 @@ else
                                 		# and suggests the delete process to be done manually as there could be too many datum for the solnet query to
                                 		# download
 				
-						if [ $result_count -ne $gap_count ] ; then
+						if [ $result_count -ne $datum_count ] ; then
                                 		        echo -n "$(date +'%Y-%m-%d %H:%M:%S') Skipping Process. Count doesn't match, " | tee -a $log_path
                                         		echo "adjust date and run manually. " | tee -a $log_path
                                 		else
@@ -443,8 +443,8 @@ else
 				
                         	# Summary of Solnet Event Parameters
                        		echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 1" | tee -a $log_path
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap" | tee -a $log_path
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Start Border " | tee -a $log_path
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap - Start Border" | tee -a $log_path
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Discontinuity due to Gap - Start Border" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent1_start_end_datetime" | tee -a $log_path
@@ -452,8 +452,8 @@ else
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $sne1_final_reading" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $sne1_start_reading" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 2" | tee -a $log_path
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap" | tee -a $log_path
-                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Description: End Border " | tee -a $log_path
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap - End Border" | tee -a $log_path
+                        	echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Discontinuity due to Gap - End Border " | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Node ID: $node" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Source ID: $sid" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Start datetime: $snevent2_start_end_datetime" |  tee -a $log_path
