@@ -305,7 +305,7 @@ class Client:
         v = resp.json()
         if v["success"] != True:
             raise Exception("Unsuccessful API call")
-
+        
         return v["data"]
 
     def import_compressed_data(self, description, importdata ):
@@ -368,8 +368,7 @@ class Client:
         # These should be present for all API calls
         headers = {"content-type": "application/json; charset=UTF-8", "host": "data.solarnetwork.net", "x-sn-date": date}
 
-        aux_data_json = json.dumps(auxiliarydata)
-        body = (f'{aux_data_json}\r\n')
+        body = auxiliarydata
               
         auth = generate_auth_header(
             self.token, self.secret, "POST", path, "", headers, body, now
