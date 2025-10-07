@@ -3,7 +3,7 @@
 CSV WattHours Accumulator with Date Conversion
 
 Reads a CSV file, converts dates to UTC, multiplies watts/wattHours by 1000,
-replaces empty values with 0, and accumulates wattHours values.
+replaces empty values and negative values with 0, and accumulates wattHours values.
 
 Usage:
     python script.py input.csv "America/New_York"
@@ -53,8 +53,8 @@ DATE_FORMAT_WIN = '%#m/%#d/%Y %H:%M:%S'  # Windows
 DATE_FORMAT_PADDED = '%m/%d/%Y %H:%M:%S'  # Fallback
 
 
-def convert_to_utc(date_str, source_tz_obj, utc_tz_obj, date_format):
-    """Convert a date string from source timezone to UTC."""
+def convert_date(date_str, date_format, source_tz_obj=None, utc_tz_obj=None):
+    """Convert a date string. If timezone provided, convert to UTC. Otherwise just reformat."""
     date_str = date_str.strip()
     
     # Try to parse with platform-specific format
@@ -64,15 +64,18 @@ def convert_to_utc(date_str, source_tz_obj, utc_tz_obj, date_format):
         # Fallback to padded format
         dt = datetime.strptime(date_str, DATE_FORMAT_PADDED)
     
-    # Convert to UTC
-    if USE_PYTZ:
-        dt_local = source_tz_obj.localize(dt)
-        dt_utc = dt_local.astimezone(utc_tz_obj)
+    # Convert to UTC if timezone provided
+    if source_tz_obj and utc_tz_obj:
+        if USE_PYTZ:
+            dt_local = source_tz_obj.localize(dt)
+            dt_utc = dt_local.astimezone(utc_tz_obj)
+        else:
+            dt_local = dt.replace(tzinfo=source_tz_obj)
+            dt_utc = dt_local.astimezone(utc_tz_obj)
+        return dt_utc.strftime('%Y-%m-%d %H:%M:%SZ')
     else:
-        dt_local = dt.replace(tzinfo=source_tz_obj)
-        dt_utc = dt_local.astimezone(utc_tz_obj)
-    
-    return dt_utc.strftime('%Y-%m-%d %H:%M:%S')
+        # Just reformat the date without timezone conversion
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 
 def process_csv(input_file, timezone, output_file=None):
@@ -85,13 +88,17 @@ def process_csv(input_file, timezone, output_file=None):
         input_path = Path(input_file)
         output_file = input_path.stem + '_accumulated' + input_path.suffix
     
-    # Setup timezone objects
-    if USE_PYTZ:
-        source_tz_obj = pytz.timezone(timezone)
-        utc_tz_obj = pytz.UTC
-    else:
-        source_tz_obj = ZoneInfo(timezone)
-        utc_tz_obj = ZoneInfo('UTC')
+    # Setup timezone objects if timezone provided
+    source_tz_obj = None
+    utc_tz_obj = None
+    
+    if timezone:
+        if USE_PYTZ:
+            source_tz_obj = pytz.timezone(timezone)
+            utc_tz_obj = pytz.UTC
+        else:
+            source_tz_obj = ZoneInfo(timezone)
+            utc_tz_obj = ZoneInfo('UTC')
     
     # Determine date format based on platform
     if platform.system() == 'Windows':
@@ -117,9 +124,12 @@ def process_csv(input_file, timezone, output_file=None):
             date_column = find_date_column(headers)
             if date_column:
                 print(f"Found date column: '{date_column}'")
-                print(f"Converting from timezone: {timezone} to UTC")
+                if timezone:
+                    print(f"Converting from timezone: {timezone} to UTC")
+                else:
+                    print("Reformatting dates (no timezone conversion)")
             else:
-                print("Warning: No date column found, skipping date conversion")
+                print("Warning: No date column found, skipping date processing")
             
             # Check for watts column
             has_watts = 'watts' in headers
@@ -135,13 +145,13 @@ def process_csv(input_file, timezone, output_file=None):
             
             for i, row in enumerate(reader, start=2):
                 try:
-                    # Convert date to UTC if date column exists
+                    # Convert/reformat date if date column exists
                     if date_column and row.get(date_column):
-                        row[date_column] = convert_to_utc(
+                        row[date_column] = convert_date(
                             row[date_column], 
+                            date_format,
                             source_tz_obj, 
-                            utc_tz_obj, 
-                            date_format
+                            utc_tz_obj
                         )
                     
                     # Process watts column: replace empty with 0 and multiply by 1000
@@ -225,7 +235,7 @@ Common timezones:
     )
     
     parser.add_argument('csv_file', help='Input CSV file')
-    parser.add_argument('timezone', help='Source timezone (e.g., "America/New_York")')
+    parser.add_argument('timezone', nargs='?', default=None, help='Source timezone (e.g., "America/New_York") - optional')
     parser.add_argument('-o', '--output', help='Output CSV file (default: input_accumulated.csv)')
     
     args = parser.parse_args()
@@ -235,16 +245,17 @@ Common timezones:
         print(f"Error: File '{args.csv_file}' not found")
         sys.exit(1)
     
-    # Validate timezone
-    try:
-        if USE_PYTZ:
-            pytz.timezone(args.timezone)
-        else:
-            ZoneInfo(args.timezone)
-    except Exception:
-        print(f"Error: Invalid timezone '{args.timezone}'")
-        print("Use format like 'America/New_York' or 'Asia/Manila'")
-        sys.exit(1)
+    # Validate timezone if provided
+    if args.timezone:
+        try:
+            if USE_PYTZ:
+                pytz.timezone(args.timezone)
+            else:
+                ZoneInfo(args.timezone)
+        except Exception:
+            print(f"Error: Invalid timezone '{args.timezone}'")
+            print("Use format like 'America/New_York' or 'Asia/Manila'")
+            sys.exit(1)
     
     # Process the CSV
     process_csv(args.csv_file, args.timezone, args.output)

@@ -77,14 +77,14 @@ def convert_to_utc(date_str, source_tz, date_format=None):
     return dt_utc.strftime('%Y-%m-%d %H:%M:%S')
 
 
-def process_date_column(df, date_col='date', timezone='UTC', date_format=None):
+def process_date_column(df, date_col='date', timezone=None, date_format=None):
     """
-    Convert date column from source timezone to UTC with format YYYY-MM-DD HH:MM:SS.
+    Convert date column format and optionally convert timezone to UTC.
     
     Args:
         df: DataFrame with date data
         date_col: Name of the date column
-        timezone: Source timezone (e.g., 'Asia/Manila', 'America/New_York')
+        timezone: Source timezone (e.g., 'Asia/Manila', 'America/New_York'). If None, only reformats dates.
         date_format: Format of the input date strings (optional)
     
     Returns:
@@ -93,13 +93,14 @@ def process_date_column(df, date_col='date', timezone='UTC', date_format=None):
     if date_col not in df.columns:
         raise ValueError(f"Column '{date_col}' not found in CSV. Available columns: {df.columns.tolist()}")
     
-    # Pre-create timezone objects (reuse for all rows)
-    if USE_PYTZ:
-        source_tz_obj = pytz.timezone(timezone)
-        utc_tz_obj = pytz.UTC
-    else:
-        source_tz_obj = ZoneInfo(timezone)
-        utc_tz_obj = ZoneInfo('UTC')
+    # Pre-create timezone objects if timezone conversion is requested
+    if timezone:
+        if USE_PYTZ:
+            source_tz_obj = pytz.timezone(timezone)
+            utc_tz_obj = pytz.UTC
+        else:
+            source_tz_obj = ZoneInfo(timezone)
+            utc_tz_obj = ZoneInfo('UTC')
     
     # Determine which date format to use (platform-specific)
     if platform.system() == 'Windows':
@@ -132,15 +133,18 @@ def process_date_column(df, date_col='date', timezone='UTC', date_format=None):
                     else:
                         raise
             
-            # Convert to UTC
-            if USE_PYTZ:
-                dt_local = source_tz_obj.localize(dt)
-                dt_utc = dt_local.astimezone(utc_tz_obj)
+            # Convert to UTC if timezone is provided, otherwise just reformat
+            if timezone:
+                if USE_PYTZ:
+                    dt_local = source_tz_obj.localize(dt)
+                    dt_utc = dt_local.astimezone(utc_tz_obj)
+                else:
+                    dt_local = dt.replace(tzinfo=source_tz_obj)
+                    dt_utc = dt_local.astimezone(utc_tz_obj)
+                parsed_dates.append(dt_utc.strftime('%Y-%m-%d %H:%M:%S'))
             else:
-                dt_local = dt.replace(tzinfo=source_tz_obj)
-                dt_utc = dt_local.astimezone(utc_tz_obj)
-            
-            parsed_dates.append(dt_utc.strftime('%Y-%m-%d %H:%M:%S'))
+                # Just reformat the date without timezone conversion
+                parsed_dates.append(dt.strftime('%Y-%m-%d %H:%M:%S'))
         
         df[date_col] = parsed_dates
         
@@ -199,9 +203,18 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example usage:
+  python script.py input.csv
   python script.py input.csv -t Asia/Manila
   python script.py input.csv -t America/New_York -o output.csv
   python script.py input.csv -t Europe/London -c solar_irradiance -d timestamp
+
+Without timezone (-t):
+  - Dates will only be reformatted to YYYY-MM-DD HH:MM:SS
+  - No timezone conversion occurs
+
+With timezone (-t):
+  - Dates will be converted from source timezone to UTC
+  - Output format: YYYY-MM-DD HH:MM:SS
 
 Common timezones:
   America/New_York, America/Los_Angeles, America/Chicago
@@ -212,8 +225,8 @@ Common timezones:
     )
     
     parser.add_argument('input_file', help='Input CSV file path')
-    parser.add_argument('-t', '--timezone', required=True,
-                        help='Source timezone (e.g., Asia/Manila, America/New_York, Europe/London)')
+    parser.add_argument('-t', '--timezone', 
+                        help='Source timezone for conversion to UTC (e.g., Asia/Manila, America/New_York). If not provided, dates will only be reformatted.')
     parser.add_argument('-o', '--output', help='Output CSV file path (default: adds _with_hours suffix)')
     parser.add_argument('-c', '--column', default='irradiance', 
                         help='Name of the irradiance column (default: irradiance)')
@@ -230,16 +243,17 @@ Common timezones:
         print(f"Error: Input file '{args.input_file}' not found.", file=sys.stderr)
         sys.exit(1)
     
-    # Validate timezone
-    try:
-        if USE_PYTZ:
-            pytz.timezone(args.timezone)
-        else:
-            ZoneInfo(args.timezone)
-    except Exception:
-        print(f"Error: Invalid timezone '{args.timezone}'", file=sys.stderr)
-        print("Use format like 'America/New_York' or 'Asia/Manila'")
-        sys.exit(1)
+    # Validate timezone if provided
+    if args.timezone:
+        try:
+            if USE_PYTZ:
+                pytz.timezone(args.timezone)
+            else:
+                ZoneInfo(args.timezone)
+        except Exception:
+            print(f"Error: Invalid timezone '{args.timezone}'", file=sys.stderr)
+            print("Use format like 'America/New_York' or 'Asia/Manila'")
+            sys.exit(1)
     
     # Determine output file path
     if args.output:
@@ -254,8 +268,11 @@ Common timezones:
         print(f"Loaded {len(df)} rows with columns: {df.columns.tolist()}")
         
         # Process date column
-        print(f"Converting date column '{args.date_column}' from {args.timezone} to UTC")
-        print(f"Expected format: m/d/yyyy h:mm (e.g., 1/1/2023 0:00)")
+        if args.timezone:
+            print(f"Converting date column '{args.date_column}' from {args.timezone} to UTC")
+        else:
+            print(f"Reformatting date column '{args.date_column}' to YYYY-MM-DD HH:MM:SS")
+        print(f"Expected input format: m/d/yyyy h:mm (e.g., 1/1/2023 0:00)")
         df = process_date_column(df, args.date_column, args.timezone, args.date_format)
         
         # Calculate irradiance hours
