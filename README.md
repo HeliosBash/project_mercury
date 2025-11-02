@@ -23,16 +23,16 @@
 
 ## SOLNET DATA FILLER
 
-- [ ] It has a similar process as the solnet-gap-filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data or cases wherein you will need to fill in data from start of production. Make sure to round up the date range to the nearest 5 minute interval.
+- [ ] It has a similar process as the solnet-gap-filler but it doesn't identify gaps. Applicable for date ranges that are known to have no data or cases wherein you will need to fill in data from start of production. Make sure to round up the date range to the next 5 minute interval for the startdatetime and add some future offset to the enddatetime but should be less than the gap boundary. 
 
 - [ ] Usage:
 	```
-	solnet-filler --node|-n [NODE] --sourceid|-i [SOURCEID] --timezone|-z [TIMEZONE] --startdate|-s [STARTDATETIME in 'YYYY-MM-DD HH:MM'] --enddatetime|-e [ENDDATETIME in 'YYYY-MM-DD HH:MM'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [Energy Spike in watthours ; 0 for PYR Fills] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
+	solnet-filler --node|-n [NODE] --sourceid|-i [SOURCEID] --timezone|-z [TIMEZONE] --startdate|-s [STARTDATETIME in 'YYYY-MM-DD HH:MM:SS'] --enddatetime|-e [ENDDATETIME in 'YYYY-MM-DD HH:MM:SS'] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [Energy Spike in watthours ; 0 for PYR Fills] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]
 	```
 
-- [ ] Example:
+- [ ] In this example The gap is between 2 boundaries 2023-10-04 19:57:23 and 2023-10-17 00:03:00. For the 'startdatetime', we round up to the nearest 5 minute interval which is 20:00:00. For the enddatetime, we want the last data entry to be '2023-10-17 00:00:00' so we add some future offset like a minute '2023-10-17 00:01:00' which needs to be less than the gap boundary '2023-10-17 00:03:00'.
 	```
-	/bin/bash solnet-filler --node 372 --sourceid /G2/S2/S1/PYR/2 --startdatetime '2023-10-04 20:00' --enddatetime '2023-10-17 00:00' --latitude 29.658884 --longitude -82.334525 --energyspike 0 --api solcasttoken --token solnettoken --secret solnetsecret
+	/bin/bash solnet-filler --node 372 --sourceid /G2/S2/S1/PYR/2 --startdatetime '2023-10-04 20:00:00' --enddatetime '2023-10-17 00:01:00' --latitude 29.658884 --longitude -82.334525 --energyspike 0 --api solcasttoken --token solnettoken --secret solnetsecret
 	```
 
 ## BAD DATA DELETER
