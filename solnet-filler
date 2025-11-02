@@ -76,7 +76,7 @@ else
         maxoutput=1000000
 
 
-	if [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"PYR"* ]] ; then
+	if [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"PYR"* ]] || [[ "$sourceids" == *"CON"* ]]; then
 		if [[ "$sourceids" == *"GEN"* ]] && [ $energyspike == 0 ] ; then
                         echo "$(date +'%Y-%m-%d %H:%M:%S') For GEN Fills, energyspike should be greater than 0"
 		else
@@ -308,7 +308,7 @@ else
 
 					file_to_import=$irradiance_data_path
 
-				elif [[ "$sourceids" == *"GEN"* ]] ; then
+				elif [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"CON"* ]] ; then
                 			
 					electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
                 			runtime=$(date +"%Y%m%d_%H%M%S")
@@ -377,7 +377,7 @@ else
 
                                 	if [[ "$sourceids" == *"PYR"* ]]; then
 						sne1_final_reading=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $NF}')
-                                	elif [[ "$sourceids" == *"GEN"* ]]; then
+                                	elif [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"CON"* ]] ; then
 						sne1_final_reading=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $(NF-2)}')
 					else
 						echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
@@ -424,7 +424,7 @@ else
 					
 					if [[ "$sourceids" == *"PYR"* ]]; then
                                          	sne2_start_reading=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $NF}')
-                                        elif [[ "$sourceids" == *"GEN"* ]]; then
+                                        elif [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"CON"* ]] ; then
 						sne2_start_reading=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $(NF-2)}')
                                         else
                                                 echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
@@ -451,6 +451,9 @@ else
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') End datetime: $snevent1_start_end_datetime" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $sne1_final_reading" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $sne1_start_reading" | tee -a $log_path
+
+				
+
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 2" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap - End Border" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Description: Discontinuity due to Gap - End Border " | tee -a $log_path
