@@ -359,40 +359,60 @@ class Client:
 
         return v["data"]
 
-    def store_auxiliary(self, auxiliarydata):
+    def store_datum_auxiliary(self, auxiliary_data: dict) -> dict:
+        """
+            Store or update a datum auxiliary record.
+    
+         Args:
+            auxiliary_data: Dictionary containing datum auxiliary record with keys:
+            - created: Event date (string in 'yyyy-MM-dd HH:mm:ss.SSS' format or millisecond epoch)
+            - nodeId: Node ID (int)
+            - sourceId: Source ID (string)
+            - type: Datum auxiliary type (string)
+            - notes: Optional comment (string)
+            - final: General datum sample representing final data (dict)
+            - start: General datum sample representing starting data (dict)
+            - meta: Optional metadata object (dict)
+    
+            Returns:
+            dict: Response data from the API
+        """
         # The time has to be in UTC
         now = datetime.utcnow()
         date = get_x_sn_date(now)
         path = "/solaruser/api/v1/sec/datum/auxiliary"
+    
+        # Headers for this API call
+        headers = {
+            "content-type": "application/json; charset=utf-8",
+            "host": "data.solarnetwork.net",
+            "x-sn-date": date
+        }
 
-        # These should be present for all API calls
-        headers = {"content-type": "application/json; charset=UTF-8", "host": "data.solarnetwork.net", "x-sn-date": date}
+        # Convert auxiliary data to JSON
 
-        body = auxiliarydata
-              
+        body = json.dumps(auxiliary_data)
+
+        # Generate authorization header
+
         auth = generate_auth_header(
-            self.token, self.secret, "POST", path, "", headers, body, now
-        )
-
+                self.token, self.secret, "POST", path, "", headers, body, now
+                )
+        # Make the POST request
         resp = requests.post(
-            url="https://data.solarnetwork.net/solaruser/api/v1/sec/datum/auxiliary",
-            data=body,
-
-            # Make sure to actually include the headers given by the previous
-            # headers argument
-            headers={
-                "Content-Type": "application/json; charset=UTF-8",
-                "host": "data.solarnetwork.net",
-                "x-sn-date": date,
-                "Authorization": auth,
-            },
-        )
+                url="https://data.solarnetwork.net/solaruser/api/v1/sec/datum/auxiliary",
+                data=body,
+                headers={
+                    "Content-Type": "application/json; charset=utf-8",
+                    "host": "data.solarnetwork.net",
+                    "x-sn-date": date,
+                    "Authorization": auth,
+                    },
+                )
         v = resp.json()
-        return v
-        #if v["success"] != True:
-        #    raise Exception("Unsuccessful API call")
-
-        #return v["data"]
+        if v.get("success") != True:
+            raise Exception("Unsuccessful API call")
+        return v.get("data")
 
     def delete_auxiliary(self, paramstr: str) -> str:
 
