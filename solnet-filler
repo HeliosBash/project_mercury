@@ -367,6 +367,8 @@ else
 	                        if [ -z "$(cat $sne1_datum)" ] ; then
                 	                snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$localstartdate") - 5 seconds" \
                         	                +'%b %d, %Y %H:%M:%S')
+					snevent1_start_end_datetime_utc=$(date --date "$(date -Iseconds -d "$utcstartdate") - 5 seconds" \
+                                                +'%Y-%m-%d %H:%M:%SZ')
                                		sne1_final_reading=0
                         	# If there is datum before the start of the gap, final reading is the last datum entry and start and end time for event 1 is 5 seconds after the last datum entry
                         	else
@@ -385,6 +387,8 @@ else
 					fi
 					snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime:$sne1_utc_halfsec") \
 						+ 5 seconds" +'%b %d, %Y %H:%M:%S')
+					snevent1_start_end_datetime_utc=$(date --date "$(date -Iseconds -d "$sne1_utcdatetime") \
+                                                + 5 seconds" +'%Y-%m-%d %H:%M:%SZ')
                         	fi
 	
 				# Creating a data sample window that is 1 hour after the enddate to get the start reading at the end of the gap
@@ -413,6 +417,9 @@ else
                         	if [ -z "$(cat $sne2_datum)" ] ; then
                                 	snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d "$localenddate") + 5 seconds" \
                                         	+'%b %d, %Y %H:%M:%S')
+					snevent2_start_end_datetime_utc=$(date --date "$(date -Iseconds -d \
+                                                "$utcenddate") + 5 seconds" +'%Y-%m-%d %H:%M:%SZ')
+
                                 	sne2_start_reading=0
                         	# If there is datum after the end of the gap, final reading is the first datum entry and the start and end time 
 				# for event 2 is 5 seconds before the first datum entry
@@ -433,6 +440,8 @@ else
                                 	
 					snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d \
 						"$sne2_endlocaldate $sne2_endlocaltime:$sne2_utc_halfsec") - 5 seconds" +'%b %d, %Y %H:%M:%S')
+					snevent2_start_end_datetime_utc=$(date --date "$(date -Iseconds -d \
+                                                "$sne2_utcdatetime") - 5 seconds" +'%Y-%m-%d %H:%M:%SZ')
                         	fi
 
                         	# Get start reading of event 1
@@ -452,7 +461,11 @@ else
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $sne1_final_reading" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $sne1_start_reading" | tee -a $log_path
 
-				
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Store Auxiliary Script for Event 1: python3 store_auxiliary.py --node $node " | tee -a $log_path
+				echo -n "--sourceid \"$sid\" --type \"Reset\" --created \"$snevent1_start_end_datetime_utc\" " | tee -a $log_path
+				echo -n "--notes \"Discontinuity due to Gap - Start Border\" --final \'{\"a\":{\"wattHours\":$sne1_final_reading}}\' " | tee -a $log_path
+				echo -n "--start \'{\"a\":{\"wattHours\":$sne1_start_reading}}\' " | tee -a $log_path
+				echo "--token \"$token\" --secret \"$secret\"" | tee -a $log_path 
 
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Solar Network Event 2" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Cause: Discontinuity due to Gap - End Border" | tee -a $log_path
@@ -464,6 +477,11 @@ else
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Final reading: $sne2_final_reading" | tee -a $log_path
                         	echo "$(date +'%Y-%m-%d %H:%M:%S') Start Reading: $sne2_start_reading" | tee -a $log_path
 
+				echo -n "$(date +'%Y-%m-%d %H:%M:%S') Store Auxiliary Script for Event 2: python3 store_auxiliary.py --node $node " | tee -a $log_path
+                                echo -n "--sourceid \"$sid\" --type \"Reset\" --created \"$snevent2_start_end_datetime_utc\" " | tee -a $log_path
+                                echo -n "--notes \"Discontinuity due to Gap - End Border\" --final \'{\"a\":{\"wattHours\":$sne2_final_reading}}\' " | tee -a $log_path
+                                echo -n "--start \'{\"a\":{\"wattHours\":$sne2_start_reading}}\' " | tee -a $log_path
+                                echo "--token \"$token\" --secret \"$secret\"" | tee -a $log_path
 
 				###################################################################################
         	                echo "$(date +'%Y-%m-%d %H:%M:%S') Creating staged data" | tee -a $log_path
