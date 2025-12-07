@@ -162,7 +162,7 @@
 
 - [ ]   Usage:
         ```
-        python3 solnet_get_auxiliary.py --node=[nodeid] --sourceids=[sourceids] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] --token="foo" --secret="foobar"
+        python3 solnet_get_auxiliary.py --node=[nodeid] --sourceids=[sourceid] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM:SS.000Z' ] --token="foo" --secret="foobar"
         ```
 
 - [ ]   Example:
@@ -191,6 +191,20 @@
 	Description: Discontinuity due to Gap
 	User: Data Support
 
+	```
+
+## Store Auxiliary Records
+
+- [ ] Store Auxiliary Records
+
+- [ ] Usage:
+        ```
+        python3 solnet_store_auxiliary.py --node [nodeid] --source [sourceid] --type RESET --created [UTC datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --notes [description] --final [final watthours before created date] --start [starting watthours after created date]  --token "foo" --secret "foobar"
+	```
+
+- [ ] Example:
+	```
+	python3 solnet_store_auxiliary.py --node 465 --source "/NYVIII/ARCAD/RT1/PYR/2" --type "Reset" --created "2025-11-11 20:34:55Z" --notes "Discontinuity due to Gap - End Border" --final '{"a":{"wattHours":14308.58}}' --start '{"a":{"wattHours":4322142.833299}}' --token "foo" --secret "foobar"
 	```
 
 ## Solnet Manage Jobs
