@@ -1,0 +1,309 @@
+#!/bin/bash
+
+# Script to query solnet data and check for gaps
+# Gaps are defined as:
+# 1. Time gaps > 5 minutes between consecutive records
+# 2. Missing critical values (irradianceHours for PYR, wattHours for GEN)
+
+set -e
+
+# Function to display usage
+usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  --node=VALUE          Node identifier"
+    echo "  --sourceids=VALUE     Source IDs (e.g., /DE/G2/GM/PYR/1 or /DE/G2/GM/GEN/1)"
+    echo "  --maxoutput=VALUE     Maximum output records"
+    echo "  --token=VALUE         Authentication token"
+    echo "  --secret=VALUE        Secret key"
+    echo "  --aggregate=VALUE     Aggregation type: None, Hour, Day, etc. (default: Hour)"
+    echo "  --testfile=VALUE      Test with existing CSV file (skips Python script)"
+    echo ""
+    echo "Date range: Automatically set to previous hour from current time"
+    exit 1
+}
+
+# Parse command line arguments
+NODE=""
+SOURCEIDS=""
+MAXOUTPUT=""
+TOKEN=""
+SECRET=""
+AGGREGATE="Hour"
+TESTFILE=""
+
+for arg in "$@"; do
+    case $arg in
+        --node=*)
+            NODE="${arg#*=}"
+            ;;
+        --sourceids=*)
+            SOURCEIDS="${arg#*=}"
+            ;;
+        --maxoutput=*)
+            MAXOUTPUT="${arg#*=}"
+            ;;
+        --token=*)
+            TOKEN="${arg#*=}"
+            ;;
+        --secret=*)
+            SECRET="${arg#*=}"
+            ;;
+        --aggregate=*)
+            AGGREGATE="${arg#*=}"
+            ;;
+        --testfile=*)
+            TESTFILE="${arg#*=}"
+            ;;
+        --help|-h)
+            usage
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            usage
+            ;;
+    esac
+done
+
+# Check required parameters (skip if using testfile)
+if [ -z "$TESTFILE" ]; then
+    if [ -z "$NODE" ] || [ -z "$SOURCEIDS" ] || [ -z "$TOKEN" ] || [ -z "$SECRET" ]; then
+        echo "Error: Missing required parameters"
+        echo "Required: --node, --sourceids, --token, --secret"
+        echo "Or use --testfile=path/to/file.csv for testing"
+        usage
+    fi
+fi
+
+# Calculate date range (previous hour)
+ENDDATE=$(date -u +"%Y-%m-%d %H:00:00")
+STARTDATE=$(date -u -d "$ENDDATE - 1 hour" +"%Y-%m-%d %H:00:00")
+
+echo "========================================"
+echo "SolNet Query Gap Checker"
+echo "========================================"
+
+if [ -n "$TESTFILE" ]; then
+    echo "TEST MODE: Using file $TESTFILE"
+    # Detect source type from filename or first data row
+    if [[ "$TESTFILE" == *"PYR"* ]] || [[ "$TESTFILE" == *"pyr"* ]]; then
+        SOURCE_TYPE="PYR"
+    elif [[ "$TESTFILE" == *"GEN"* ]] || [[ "$TESTFILE" == *"gen"* ]]; then
+        SOURCE_TYPE="GEN"
+    else
+        SOURCE_TYPE="UNKNOWN"
+    fi
+    echo "Detected Source Type: $SOURCE_TYPE (from filename)"
+else
+    echo "Node: $NODE"
+    echo "Source IDs: $SOURCEIDS"
+    echo "Start Date: $STARTDATE"
+    echo "End Date: $ENDDATE"
+    echo "Aggregate: $AGGREGATE"
+    echo "Max Output: ${MAXOUTPUT:-unlimited}"
+    
+    # Detect source type from sourceids
+    if [[ "$SOURCEIDS" == *"PYR"* ]] || [[ "$SOURCEIDS" == *"pyr"* ]]; then
+        SOURCE_TYPE="PYR"
+    elif [[ "$SOURCEIDS" == *"GEN"* ]] || [[ "$SOURCEIDS" == *"gen"* ]]; then
+        SOURCE_TYPE="GEN"
+    else
+        SOURCE_TYPE="UNKNOWN"
+    fi
+    echo "Source Type: $SOURCE_TYPE"
+fi
+echo "========================================"
+echo ""
+
+# Create temporary file for output
+TEMP_OUTPUT=$(mktemp /tmp/solnet_output.XXXXXX.csv)
+
+# Run the Python script or use test file
+if [ -n "$TESTFILE" ]; then
+    if [ ! -f "$TESTFILE" ]; then
+        echo "Error: Test file not found: $TESTFILE"
+        rm "$TEMP_OUTPUT"
+        exit 1
+    fi
+    echo "Reading test file..."
+    cp "$TESTFILE" "$TEMP_OUTPUT"
+else
+    echo "Running query..."
+    python3 solnet_query.py \
+        --node="$NODE" \
+        --sourceids="$SOURCEIDS" \
+        --startdate="$STARTDATE" \
+        --enddate="$ENDDATE" \
+        --aggregate="$AGGREGATE" \
+        ${MAXOUTPUT:+--maxoutput="$MAXOUTPUT"} \
+        --token="$TOKEN" \
+        --secret="$SECRET" > "$TEMP_OUTPUT"
+fi
+
+# Check if output file has data
+LINE_COUNT=$(wc -l < "$TEMP_OUTPUT")
+if [ "$LINE_COUNT" -le 1 ]; then
+    echo "Warning: No data returned from query"
+    cat "$TEMP_OUTPUT"
+    rm "$TEMP_OUTPUT"
+    exit 0
+fi
+
+echo "Query completed. Analyzing for gaps..."
+echo ""
+
+# Analyze gaps using awk - pass source type and aggregate type
+awk -F',' -v source_type="$SOURCE_TYPE" -v aggregate="$AGGREGATE" '
+BEGIN {
+    gap_count = 0
+    missing_value_count = 0
+    MAX_GAP_SECONDS = 300
+}
+
+NR == 1 {
+    print "Data Analysis Report"
+    print "===================="
+    print "Source Type: " source_type
+    print "Aggregate: " aggregate
+    print ""
+    
+    for (i = 1; i <= NF; i++) {
+        col = $i
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", col)
+        
+        if (col == "Created" || col == "created" || col == "utcDate") {
+            timestamp_col = i
+        }
+        if (source_type == "PYR" && col == "irradianceHours") {
+            critical_col = i
+            critical_field = "irradianceHours"
+        }
+        if (source_type == "GEN" && col == "wattHours") {
+            critical_col = i
+            critical_field = "wattHours"
+        }
+    }
+    
+    if (timestamp_col == 0) {
+        print "ERROR: Could not find timestamp column"
+        exit 1
+    }
+    
+    if (critical_col == 0) {
+        if (source_type == "PYR") {
+            print "ERROR: Could not find irradianceHours column"
+        } else if (source_type == "GEN") {
+            print "ERROR: Could not find wattHours column"
+        } else {
+            print "WARNING: Unknown source type"
+        }
+    } else {
+        print "Monitoring field: " critical_field " (column " critical_col ")"
+        print "Total columns in header: " NF
+    }
+    print ""
+    next
+}
+
+NR > 1 {
+    # Split the entire line to preserve all fields including trailing empty ones
+    n = split($0, fields, ",")
+    
+    # Adjust critical column position based on actual data structure
+    actual_critical_col = critical_col
+    if (critical_col > n) {
+        # For GEN data: wattHours is always 3rd column from the last
+        # For PYR data: irradianceHours is always the last column
+        if (source_type == "GEN") {
+            actual_critical_col = n - 2  # 3rd from last (n, n-1, n-2)
+        } else if (source_type == "PYR") {
+            actual_critical_col = n  # last column
+        }
+        
+        if (NR == 2) {
+            print "WARNING: Expected column " critical_col " but data only has " n " fields"
+            print "Adjusted " critical_field " to column " actual_critical_col " (based on " source_type " format)"
+            print "Value found: [" fields[actual_critical_col] "]"
+            print ""
+        }
+    }
+    
+    timestamp = fields[timestamp_col]
+    critical_value = fields[actual_critical_col]
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", critical_value)
+    
+    if (critical_col > 0 && (critical_value == "" || length(critical_value) == 0)) {
+        if (missing_value_count == 0) {
+            print "\nGAPS FOUND - Missing " critical_field ":"
+            print "-------------------------------------"
+        }
+        missing_value_count++
+        print "  Line " NR ": " timestamp " - Missing " critical_field
+    }
+    
+    if (NR > 2 && prev_timestamp != "" && timestamp_col > 0) {
+        cmd_prev = "date -d \"" prev_timestamp "\" +%s 2>/dev/null || date -j -f \"%Y-%m-%d %H:%M:%S\" \"" substr(prev_timestamp, 1, 19) "\" +%s 2>/dev/null"
+        cmd_curr = "date -d \"" timestamp "\" +%s 2>/dev/null || date -j -f \"%Y-%m-%d %H:%M:%S\" \"" substr(timestamp, 1, 19) "\" +%s 2>/dev/null"
+        
+        cmd_prev | getline prev_ts
+        close(cmd_prev)
+        cmd_curr | getline curr_ts
+        close(cmd_curr)
+        
+        time_diff = curr_ts - prev_ts
+        
+        if (time_diff > MAX_GAP_SECONDS) {
+            if (gap_count == 0) {
+                print "\nGAPS FOUND - Time gaps > 5 minutes:"
+                print "-----------------------------------"
+            }
+            gap_count++
+            minutes = int(time_diff / 60)
+            seconds = time_diff % 60
+            print "  Gap " gap_count ": " minutes "m " seconds "s between"
+            print "    " prev_timestamp
+            print "    " timestamp
+        }
+    }
+    
+    prev_timestamp = timestamp
+}
+
+END {
+    print "\n========================================"
+    print "Summary:"
+    print "========================================"
+    print "Total records processed: " (NR - 1)
+    print "Time gaps (> 5 min): " gap_count
+    
+    if (critical_field != "") {
+        print "Missing " critical_field ": " missing_value_count
+    }
+    
+    print "========================================"
+    
+    if (gap_count > 0 || missing_value_count > 0) {
+        print "\nStatus: GAPS DETECTED"
+        exit 1
+    } else {
+        print "\nStatus: NO GAPS FOUND"
+        exit 0
+    }
+}
+' "$TEMP_OUTPUT"
+
+# Store exit code
+GAP_STATUS=$?
+
+# Display the output file location
+echo ""
+if [ -n "$TESTFILE" ]; then
+    echo "Test file analyzed: $TESTFILE"
+    echo "Temp copy at: $TEMP_OUTPUT"
+else
+    echo "Output saved to: $TEMP_OUTPUT"
+fi
+echo ""
+
+# Exit with appropriate code
+exit $GAP_STATUS
