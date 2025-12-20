@@ -3,12 +3,12 @@ import json
 import sys
 import argparse
 
-def solar_query(node, sourceids, startdate, enddate, aggregate, maxoutput, token, secret):
+def solar_query(node, sourceids, startdate, enddate, aggregate, maxoutput, token, secret, header_mode='auto'):
     client = Client(token, secret)
 
-    formatted_sourceids=sourceids.replace("/","%2F")
-    formatted_startdate=startdate.replace(" ","T").replace(":","%3A")
-    formatted_enddate=enddate.replace(" ","T").replace(":","%3A")
+    formatted_sourceids = sourceids.replace("/", "%2F")
+    formatted_startdate = startdate.replace(" ", "T").replace(":", "%3A")
+    formatted_enddate = enddate.replace(" ", "T").replace(":", "%3A")
 
     if aggregate == "None":
         param_str = f"localEndDate={formatted_enddate}&localStartDate={formatted_startdate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={formatted_sourceids}"
@@ -16,57 +16,41 @@ def solar_query(node, sourceids, startdate, enddate, aggregate, maxoutput, token
         param_str = f"aggregation={aggregate}&localEndDate={formatted_enddate}&localStartDate={formatted_startdate}&max={maxoutput}&nodeId={node}&offset=0&sourceIds={formatted_sourceids}"
 
     response = client.solarquery(param_str)
-    if 'PYR' in sourceids:
-        if aggregate == "None":
-            print('Created,localDate,localTime,nodeId,sourceId,irradiance,irradianceHours')
-            for element in response['results']:
-                try:
-                    print(element.get('created', ''), element.get('localDate', ''), element.get('localTime', ''),
-                          element.get('nodeId', ''), element.get('sourceId', ''), element.get('irradiance', ''),
-                          element.get('irradianceHours', ''), sep=',')
-                except KeyError as e:
-                    print(f"Missing key in response: {e}")
-        else:
-            print('Created,localDate,localTime,nodeId,sourceId,irradiance_min,irradiance_max,irradiance,irradianceHours')
-            for element in response['results']:
-                try:
-                    print(element.get('created', ''), element.get('localDate', ''), element.get('localTime', ''),
-                          element.get('nodeId', ''), element.get('sourceId', ''),
-                          element.get('irradiance_min', ''), element.get('irradiance_max', ''),
-                          element.get('irradiance', ''), element.get('irradianceHours', ''), sep=',')
-                except KeyError as e:
-                    print(f"Missing key in response: {e}")
-    else:
-        if aggregate == "None":
-            print('created,localDate,localTime,nodeId,sourceId,watts,current,voltage,frequency,powerFactor,apparentPower,reactivePower,lineVoltage,current_a,current_b,current_c,voltage_a,voltage_b,voltage_c,voltage_ab,voltage_bc,voltage_ca,wattHours,wattHoursReverse,phase')
-            for element in response['results']:
-                try:
-                    print(element.get('created', ''), element.get('localDate', ''), element.get('localTime', ''), element.get('nodeId', ''), 
-                          element.get('sourceId', ''), element.get('watts', ''), element.get('current', ''), element.get('voltage', ''), 
-                          element.get('frequency', ''), element.get('powerFactor', ''), element.get('apparentPower', ''), element.get('reactivePower', ''), 
-                          element.get('lineVoltage', ''), element.get('current_a', ''), element.get('current_b', ''), element.get('current_c', ''), 
-                          element.get('voltage_a', ''), element.get('voltage_b', ''), element.get('voltage_c', ''), element.get('voltage_ab', ''), 
-                          element.get('voltage_bc', ''), element.get('voltage_ca', ''), element.get('wattHours', ''), element.get('wattHoursReverse', ''), element.get('phase', ''), sep=',')
-                except KeyError as e:
-                    print(f"Missing key in response: {e}")
-        else:
-            print('created,localDate,localTime,nodeId,sourceId,watts_min,watts_max,current_min,current_max,voltage_min,voltage_max,frequency_min,frequency_max,powerFactor_min,powerFactor_max,apparentPower_min,apparentPower_max,reactivePower_min,reactivePower_max,lineVoltage_min,lineVoltage_max,current_a_min,current_a_max,current_b_min,current_b_max,current_c_min,current_c_max,voltage_a_min,voltage_a_max,voltage_b_min,voltage_b_max,voltage_c_min,voltage_c_max,voltage_ab_min,voltage_ab_max,voltage_bc_min,voltage_bc_max,voltage_ca_min,voltage_ca_max,watts,current,voltage,frequency,powerFactor,apparentPower,reactivePower,lineVoltage,current_a,current_b,current_c,voltage_a,voltage_b,voltage_c,voltage_ab,voltage_bc,voltage_ca,wattHours,wattHoursReverse,phase')
-            for element in response['results']:
-                try:
-                    print(element.get('created', ''), element.get('localDate', ''), element.get('localTime', ''), element.get('nodeId', ''), element.get('sourceId', ''), 
-                        element.get('watts_min', ''), element.get('watts_max', ''), element.get('current_min', ''), element.get('current_max', ''), element.get('voltage_min', ''), 
-                        element.get('voltage_max', ''), element.get('frequency_min', ''), element.get('frequency_max', ''), element.get('powerFactor_min', ''), element.get('powerFactor_max', ''), 
-                        element.get('apparentPower_min', ''), element.get('apparentPower_max', ''), element.get('reactivePower_min', ''), element.get('reactivePower_max', ''), 
-                        element.get('lineVoltage_min', ''), element.get('lineVoltage_max', ''), element.get('current_a_min', ''), element.get('current_a_max', ''), element.get('current_b_min', ''), 
-                        element.get('current_b_max', ''), element.get('current_c_min', ''), element.get('current_c_max', ''), element.get('voltage_a_min', ''), element.get('voltage_a_max', ''), 
-                        element.get('voltage_b_min', ''), element.get('voltage_b_max', ''), element.get('voltage_c_min', ''), element.get('voltage_c_max', ''), element.get('voltage_ab_min', ''), 
-                        element.get('voltage_ab_max', ''), element.get('voltage_bc_min', ''), element.get('voltage_bc_max', ''), element.get('voltage_ca_min', ''), element.get('voltage_ca_max', ''), 
-                        element.get('watts', ''), element.get('current', ''), element.get('voltage', ''), element.get('frequency', ''), element.get('powerFactor', ''), element.get('apparentPower', ''), 
-                        element.get('reactivePower', ''), element.get('lineVoltage', ''), element.get('current_a', ''), element.get('current_b', ''), element.get('current_c', ''), element.get('voltage_a', ''), 
-                        element.get('voltage_b', ''), element.get('voltage_c', ''), element.get('voltage_ab', ''), element.get('voltage_bc', ''), element.get('voltage_ca', ''), element.get('wattHours', ''), 
-                        element.get('wattHoursReverse', ''), element.get('phase', ''), sep=",")
-                except KeyError as e:
-                    print(f"Missing key in response: {e}")
+    
+    if not response or 'results' not in response or len(response['results']) == 0:
+        if header_mode in ['always', 'auto']:
+            # Print empty header or standard columns even with no data
+            print("created,localDate,localTime,nodeId,sourceId")
+        return
+    
+    # Discover all columns in the order they appear in the first result
+    # This preserves the API's original column order
+    columns_ordered = []
+    seen = set()
+    
+    # First pass: get columns from first result in their original order
+    if response['results']:
+        for key in response['results'][0].keys():
+            columns_ordered.append(key)
+            seen.add(key)
+    
+    # Second pass: add any additional columns from other results
+    for element in response['results'][1:]:
+        for key in element.keys():
+            if key not in seen:
+                columns_ordered.append(key)
+                seen.add(key)
+    
+    sorted_columns = columns_ordered
+    
+    # Print header based on mode
+    if header_mode == 'always' or (header_mode == 'auto' and response['results']):
+        print(','.join(sorted_columns))
+    
+    # Print data rows
+    for element in response['results']:
+        row_values = [str(element.get(col, '')) for col in sorted_columns]
+        print(','.join(row_values))
 
 def main():
     parser = argparse.ArgumentParser(description="Solar query!")
@@ -79,14 +63,17 @@ def main():
     parser.add_argument("--maxoutput", required=True, help="Maximum output limit")
     parser.add_argument("--token", required=True, help="API token")
     parser.add_argument("--secret", required=True, help="API secret")
+    parser.add_argument("--header", choices=['always', 'never', 'auto'], default='auto', 
+                       help="Header mode: always=always print header, never=never print header, auto=print header only if data exists (default: auto)")
 
     args = parser.parse_args()
-    
+
     try:
-        solar_query(args.node, args.sourceids, args.localstartdate, args.localenddate, args.aggregate, args.maxoutput, args.token, args.secret)
-    except:
-        print ("Error: Unsuccesful API Call. Please make sure that the token and secret are valid and has access to query the node and source ID and check if the parameters are in the correct format")
+        solar_query(args.node, args.sourceids, args.localstartdate, args.localenddate, 
+                   args.aggregate, args.maxoutput, args.token, args.secret, args.header)
+    except Exception as e:
+        print(f"Error: Unsuccessful API Call. {str(e)}")
+        print("Please make sure that the token and secret are valid and have access to query the node and source ID, and check if the parameters are in the correct format")
 
 if __name__ == "__main__":
     main()
-

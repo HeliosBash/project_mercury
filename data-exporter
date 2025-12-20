@@ -27,7 +27,7 @@ while [ $# -gt 0 ] ; do
       secret="${1#*=}"
       ;;
     --help|-h)
-      printf "Usage: data-exporter --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [START DATE IN YYYY-MM-DD]  --enddate|-e [END DATE IN YYYY-MM-DD] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]\n" # Flag argument
+      printf "Usage: data-exporter --node|-n [NODE] --sourceid|-i [SOURCEID] --startdate|-s [START DATE IN YYYY-MM-DD]  --enddate|-e [END DATE IN YYYY-MM-DD] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]\n"
       exit 0
       ;;
     *)
@@ -40,41 +40,202 @@ done
 
 if [[ -z "$node" || -z "$sid" || -z "$startdate" || -z "$enddate" || -z "$token" || -z "$secret" ]] ; then
 
-	 echo "$(date +'%Y-%m-%d %H:%M:%S') Error: The following arguments are required --node --sourceid --startdate --enddate --token --secret"  2>&1 | tee -a logs/data-export.log
+         echo "$(date +'%Y-%m-%d %H:%M:%S') Error: The following arguments are required --node --sourceid --startdate --enddate --token --secret"  2>&1 | tee -a logs/data-export.log
 
 else
-	sourceids=$(echo $sid | sed "s/\//%2F/g")
-	maxoutput=1000000
-	rm -rf data/${node}_${sourceids}_${startdate}_${enddate}_data_export
-	mkdir data/${node}_${sourceids}_${startdate}_${enddate}_data_export
-	>data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv
+        sourceids=$(echo $sid | sed "s/\//%2F/g")
+        maxoutput=100000
+        rm -rf data/${node}_${sourceids}_${startdate}_${enddate}_data_export
+        mkdir -p data/${node}_${sourceids}_${startdate}_${enddate}_data_export
+        >data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for date range ${startdate} ${enddate}" 2>&1 | tee -a logs/data-export.log
-	loopstartdate=$startdate
-	loopenddate=$(date -d "$enddate + 1 day" "+%Y-%m-%d")
-	while [ "$loopstartdate" != "$loopenddate" ]; do 
-  
-		for hours in $(seq -f "%02g" 0 23)
-		do
-		
-			starttime="${loopstartdate}T${hours}%3A00"
-			endtime="${loopstartdate}T${hours}%3A59"
-		
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Exporting data between $starttime $endtime" 2>&1 | tee -a logs/data-export.log
-			echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query_local.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret" 2>&1 | tee -a logs/data-export.log
-		
-			python3 solnet_query_local.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --aggregate None --maxoutput $maxoutput --token $token --secret $secret > data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning started for date range ${startdate} ${enddate}" 2>&1 | tee -a logs/data-export.log
+        
+        # Phase 1: Sample every day in the date range to discover all columns
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Phase 1: Discovering all possible columns..." 2>&1 | tee -a logs/data-export.log
+        
+        temp_columns_file="data/${node}_${sourceids}_${startdate}_${enddate}_columns.tmp"
+        >$temp_columns_file
+        
+        # Sample one time period from each day
+        sample_date=$startdate
+        loopenddate=$(date -d "$enddate + 1 day" "+%Y-%m-%d")
+        
+        while [ "$sample_date" != "$loopenddate" ]; do
+            starttime="${sample_date}T00%3A00"
+            endtime="${sample_date}T00%3A59"
+            
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Sampling columns from $sample_date" 2>&1 | tee -a logs/data-export.log
+            
+            # Get header only
+            python3 solnet_query_local.py --node $node --sourceids $sourceids \
+                --localstartdate $starttime --localenddate $endtime \
+                --aggregate None --maxoutput 1 --token $token --secret $secret \
+                --header always 2>/dev/null | head -1 >> $temp_columns_file
+            
+            sample_date=$(date -d "$sample_date + 1 day" "+%Y-%m-%d")
+        done
+        
+        # Merge and deduplicate columns while preserving order
+        master_columns=$(python3 -c "
+import sys
+columns_seen = []
+columns_set = set()
 
-			sed -i '1d' data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv
-			#filecount=$(cat data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv | wc -l )
-			#echo "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_expire_preview.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --token $token --secret $secret" 2>&1 | tee -a logs/data-export.log
-			#expirecount=$(python3 solnet_expire_preview.py --node $node --sourceids $sourceids --localstartdate $starttime --localenddate $endtime --token $token --secret $secret)	
-			cat data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_${starttime}_${endtime}_data.csv >> data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv
-			#echo "${starttime},${endtime},$filecount,$expirecount" 2>&1 | tee -a data/${node}_${sourceids}_${startdate}_${enddate}_data_export/${node}_${sourceids}_count.log
-			sleep 2
-		done
-		loopstartdate=$(date -d "$loopstartdate + 1 day" "+%Y-%m-%d")	
-	done
+for line in open('$temp_columns_file'):
+    cols = line.strip().split(',')
+    for col in cols:
+        if col and col not in columns_set:
+            columns_seen.append(col)
+            columns_set.add(col)
 
-	echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning ended for date range ${startdate} ${enddate}" 2>&1 | tee -a logs/data-export.log
+print(','.join(columns_seen))
+")
+        
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Discovered columns: $master_columns" 2>&1 | tee -a logs/data-export.log
+        echo "$master_columns" > data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv
+        
+        rm -f $temp_columns_file
+        
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Phase 2: Exporting data with pagination..." 2>&1 | tee -a logs/data-export.log
+        
+        # Phase 2: Export data using pagination based on last timestamp
+        current_start="${startdate} 00:00:00"
+        final_end="${enddate} 23:59:59"
+        total_records=0
+        batch_num=0
+        previous_timestamp=""
+        
+        while true; do
+            batch_num=$((batch_num + 1))
+            temp_output="data/${node}_${sourceids}_${startdate}_${enddate}_data_export/batch_${batch_num}.csv"
+            
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Batch $batch_num: Fetching up to $maxoutput records from $current_start" 2>&1 | tee -a logs/data-export.log
+            
+            # Export data
+            python3 solnet_query_local.py --node $node --sourceids $sourceids \
+                --localstartdate "$current_start" --localenddate "$final_end" \
+                --aggregate None --maxoutput $maxoutput --token $token --secret $secret \
+                --header always > $temp_output
+            
+            # Count records (excluding header)
+            record_count=$(tail -n +2 $temp_output | wc -l)
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Batch $batch_num: Retrieved $record_count records" 2>&1 | tee -a logs/data-export.log
+            
+            # If no records returned, we're done
+            if [ $record_count -eq 0 ]; then
+                echo "$(date +'%Y-%m-%d %H:%M:%S') No more data to fetch. Export complete." 2>&1 | tee -a logs/data-export.log
+                rm -f $temp_output
+                break
+            fi
+            
+            # Align columns and append to final CSV
+            python3 -c "
+import csv
+import sys
+
+master_cols = '$master_columns'.split(',')
+
+with open('$temp_output', 'r') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        aligned_row = [row.get(col, '') for col in master_cols]
+        print(','.join(aligned_row))
+" >> data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv
+            
+            total_records=$((total_records + record_count))
+            
+            # Get the last timestamp from this batch to use as next start
+            last_info=$(python3 -c "
+import csv
+from datetime import datetime
+
+with open('$temp_output', 'r') as f:
+    reader = csv.DictReader(f)
+    rows = list(reader)
+    if rows:
+        last_row = rows[-1]
+        local_date = last_row.get('localDate', '')
+        local_time = last_row.get('localTime', '')
+        created = last_row.get('created', '')
+        
+        if local_date and local_time and created:
+            # Extract seconds from the created (UTC) timestamp
+            # created format: 2025-11-26T08:39:23Z or similar
+            try:
+                # Parse the created timestamp to get seconds
+                created_dt = datetime.fromisoformat(created.replace('Z', '+00:00'))
+                seconds = created_dt.strftime('%S')
+                
+                # Build full local timestamp with accurate seconds
+                if len(local_time) == 5:  # HH:MM format
+                    local_time += f':{seconds}'
+                    
+                print(f'{local_date}|{local_time}')
+            except:
+                # Fallback: if parsing fails, just add :00
+                if len(local_time) == 5:
+                    local_time += ':00'
+                print(f'{local_date}|{local_time}')
+        else:
+            print('')
+    else:
+        print('')
+")
+            
+            # If we couldn't get a last timestamp, we're done
+            if [ -z "$last_info" ]; then
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Could not extract timestamp. Export complete." 2>&1 | tee -a logs/data-export.log
+                break
+            fi
+            
+            # Split the date and time
+            last_date=$(echo "$last_info" | cut -d'|' -f1)
+            last_time=$(echo "$last_info" | cut -d'|' -f2)
+            last_timestamp="${last_date} ${last_time}"
+            
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Last record timestamp: $last_timestamp" 2>&1 | tee -a logs/data-export.log
+            
+            # Check if we're stuck on the same timestamp
+            if [ "$last_timestamp" == "$previous_timestamp" ]; then
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Same timestamp repeated. Incrementing by 1 minute to skip duplicates." 2>&1 | tee -a logs/data-export.log
+                
+                # Increment by 1 minute
+                new_timestamp=$(python3 -c "
+from datetime import datetime, timedelta
+dt = datetime.strptime('$last_timestamp', '%Y-%m-%d %H:%M:%S')
+new_dt = dt + timedelta(minutes=1)
+print(new_dt.strftime('%Y-%m-%d %H:%M:%S'))
+")
+                current_start="$new_timestamp"
+            else
+                # Increment by 1 second
+                new_timestamp=$(python3 -c "
+from datetime import datetime, timedelta
+dt = datetime.strptime('$last_timestamp', '%Y-%m-%d %H:%M:%S')
+new_dt = dt + timedelta(seconds=1)
+print(new_dt.strftime('%Y-%m-%d %H:%M:%S'))
+")
+                current_start="$new_timestamp"
+            fi
+            
+            previous_timestamp="$last_timestamp"
+            
+            # Safety check: if current_start is after final_end, we're done
+            if [[ "$current_start" > "$final_end" ]]; then
+                echo "$(date +'%Y-%m-%d %H:%M:%S') Reached end of date range ($current_start > $final_end). Total records exported: $total_records" 2>&1 | tee -a logs/data-export.log
+                break
+            fi
+            
+            echo "$(date +'%Y-%m-%d %H:%M:%S') Next batch will start from: $current_start" 2>&1 | tee -a logs/data-export.log
+            
+            sleep 2
+        done
+
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Scanning ended for date range ${startdate} ${enddate}" 2>&1 | tee -a logs/data-export.log
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Total records exported: $total_records" 2>&1 | tee -a logs/data-export.log
+        echo "$(date +'%Y-%m-%d %H:%M:%S') Final CSV: data/${node}_${sourceids}_${startdate}_${enddate}_data_export.csv" 2>&1 | tee -a logs/data-export.log
+        
+        # Clean up temporary batch files
+        rm -f data/${node}_${sourceids}_${startdate}_${enddate}_data_export/batch_*.csv
 fi
