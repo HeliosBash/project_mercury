@@ -49,20 +49,6 @@
 	/bin/bash ee-bad-data-deleter --node 372 --sourceid /G2/S2/S1/GEN/1 --month 06 --year 2024 --token solnettoken --secret solnetsecret
 	```
 
-## PYR/GEN DATA EXPORTER
-
-- [ ] Exports PYR/GEN data for a given date range based on local timezeone and dumps it to a file.
-
-- [ ] Usage:		
-	```
-	data-exporter [nodeid] [GEN sourceids] [start date] [end date] [maxoutput] [solnet_token] [solnet_secret]
-	```
-
-- [ ] Example:
-	```	
-	/bin/bash data-exporter 350 /PA/LO/S1/PYR/2 2024-10-12 2024-10-16 1000000 solnettoken solnetsecret
-	```
-
 # PYTHON SCRIPTS FOR SOLARNETWORK API
 
 ## Solnet Query 
@@ -87,12 +73,12 @@
                 
 - [ ] Usage:          
 	```
-	solnet_query_local.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate=[Local end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret]
+	solnet_query_local.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate=[Local end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret] --output=[filename] --verbose
 	```                
 
 - [ ] Example:        
 	```
-	python3 solnet_query_local.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-01 00:00" --localenddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890"
+	python3 solnet_query_local.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-01 00:00" --localenddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890" --output="/tmp/file.csv" --verbose
 	```
 
 ## Solnet Expire Datum - Preview
