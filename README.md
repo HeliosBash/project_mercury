@@ -81,32 +81,20 @@
 	python3 solnet_query_local.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-01 00:00" --localenddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890" --output="/tmp/file.csv" --verbose
 	```
 
-## Solnet Expire Datum - Preview
+## Solnet Expire Datum
 
-- [ ] Provides a preview on the number of datum to be deleted in a given date range. Date range should be the LOCAL date and time.
+- [ ] Has two functions, provides a preview on the number of datum to be deleted in a given date range and deletes datum in a given date range. Date range should be the LOCAL date and time.
 		
 - [ ] Usage: 		
 	```
-	solnet_expire_preview.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[LOCAL start datetime in 'YYYY-MM-DD HH:MM'] --localenddatetime=[LOCAL end date in 'YYYY-MM-DD HH:MM'] --token=[solnet token] --secret=[solnet secret]
+	solnet_expire.py --action=[preview/confirm] --node=[nodeid] --sourceids=[sourceids] --localstartdate=[LOCAL start datetime in 'YYYY-MM-DD HH:MM'] --localenddatetime=[LOCAL end date in 'YYYY-MM-DD HH:MM'] --token=[solnet token] --secret=[solnet secret]
 	```
 
 - [ ] Example:	
 	```
-	python3 solnet_expire_preview.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-09 19:00:30" --localenddate="2024-06-10 20:59:30" --token="ABCD1234" --secret="WXYZ7890"
-	```
+	python3 solnet_expire.py --action="preview"  --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-09 19:00:30" --localenddate="2024-06-10 20:59:30" --token="ABCD1234" --secret="WXYZ7890"
 
-## Solnet Expire Datum - Confirm
-
-- [ ] Deletes datum in a given date range. Date range should be the LOCAL date and time.
-
-- [ ] Usage:          
-	```
-	solnet_expire_confirm.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate=[LOCAL end datetime in 'YYYY-MM-DD HH:MM'] --token=[solnet token] --secret=[solnet secret]
-	```		
-
-- [ ] Example:        
-	```
-	python3 solnet_expire_confirm.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-09 19:00:30" --localenddate="2024-06-10 20:59:30" --token="ABCD1234" --secret="WXYZ7890"
+	python3 solnet_expire.py --action="confirm"  --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-09 19:00:30" --localenddate="2024-06-10 20:59:30" --token="ABCD1234" --secret="WXYZ7890"
 	```
 	
 ## Solnet Import
