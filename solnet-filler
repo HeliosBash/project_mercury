@@ -119,19 +119,19 @@ else
         		# Checks date range for any existing datum
 
         		echo "$(date +'%Y-%m-%d %H:%M:%S') Checking for any data between specified date range " 2>&1 | tee -a $log_path
-        		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
+        		echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query_utc.py --node=\"$node\" --sourceids=\"$sourceids\" " | tee -a $log_path
         		echo -n "--startdate=\"$startdate\" --enddate=\"$enddate\" --aggregate=\"None\" --maxoutput=\"$maxoutput\" " | tee -a $log_path
         		echo "--token=\"$token\" --secret=\"$secret\"" | tee -a $log_path
 
         		>data/${node}_${sourceids}_${startdate}_${enddate}_datum
 			
-			python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" \
+			python3 solnet_query_utc.py --node="$node" --sourceids="$sourceids" --startdate="$startdate" \
 				--enddate="$enddate" --aggregate="None" --maxoutput="$maxoutput" --token="$token" \
 				--secret="$secret" 2>&1 | tee -a data/${node}_${sourceids}_${startdate}_${enddate}_datum
 							
 			datum_count=$(sed '1d'  data/${node}_${sourceids}_${startdate}_${enddate}_datum | wc -l)
 
-			# Checks for errors in solnet_query.py results and aborts if there are any
+			# Checks for errors in solnet_query_utc.py results and aborts if there are any
 
 		        if [[ "$(cat data/${node}_${sourceids}_${startdate}_${enddate}_datum)" == *"Error"* ]] ; then
                 		echo -n "$(date +'%Y-%m-%d %H:%M:%S') " | tee -a $log_path
@@ -346,7 +346,7 @@ else
                                         +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
                                 startdate_1sec_before=$(TZ=UTC date --date "$(TZ=UTC date -Iseconds -d "$utcstartdate") - 1 second" \
                                         +'%Y-%m-%d %H:%M:%SZ' | sed 's/ /T/g;s/:/%3A/g')
-                                echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" " | tee -a $log_path
+                                echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query_utc.py --node=\"$node\" " | tee -a $log_path
                                 echo -n "--sourceids=\"$sourceids\" --startdate=\"$startdate_1hour_before\" " | tee -a $log_path
                                 echo -n "--enddate=\"$startdate_1sec_before\" --aggregate=\"None\" " | tee -a $log_path
                                 echo -n "--maxoutput=\"$maxoutput\" --token=\"$token\" " | tee -a $log_path
@@ -354,7 +354,7 @@ else
 
 				# Filename where possible boundary readings at the start of the gap is stored
                                 sne1_datum="data/${node}_${sourceids}_${startdate_1hour_before}_${startdate_1sec_before}_datum"
-                                python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_1hour_before" \
+                                python3 solnet_query_utc.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_1hour_before" \
                                         --enddate="$startdate_1sec_before" --aggregate="None" --maxoutput="$maxoutput" --token="$token" \
                                         --secret="$secret" > $sne1_datum
 
@@ -377,14 +377,7 @@ else
                                 	sne1_startlocaltime=$(cat $sne1_datum | tail -n 1 | awk -F ',' '{print $3}' )
                                         sne1_utc_halfsec=$(echo $sne1_utcdatetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
 
-                                	if [[ "$sourceids" == *"PYR"* ]]; then
-						sne1_final_reading=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $NF}')
-                                	elif [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"CON"* ]] ; then
-						sne1_final_reading=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $(NF-2)}')
-					else
-						echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
-						sne1_final_reading="Error Unable to determine type of datum from source ID"
-					fi
+					sne1_final_reading=$(cat $sne1_datum | tail -n 1| awk -F ',' '{print $NF}')
 					snevent1_start_end_datetime=$(date --date "$(date -Iseconds -d "$sne1_startlocaldate $sne1_startlocaltime:$sne1_utc_halfsec") \
 						+ 5 seconds" +'%b %d, %Y %H:%M:%S')
 					snevent1_utc_start_end_datetime=$(TZ=UTC date --date "$(date -Iseconds -d "$sne1_utcdatetime") \
@@ -397,7 +390,7 @@ else
                                 startdate_1hour_after=$(TZ=UTC date --date "$(TZ=UTC date -Iseconds -d "$utcenddate") + 1 hour" +'%Y-%m-%d %H:%M:%SZ' | \
                                         sed 's/ /T/g;s/:/%3A/g')
 
-                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query.py --node=\"$node\" " | tee -a $log_path
+                        	echo -n "$(date +'%Y-%m-%d %H:%M:%S') Executing python3 solnet_query_utc.py --node=\"$node\" " | tee -a $log_path
                        		echo -n "--sourceids=\"$sourceids\" --startdate=\"$startdate_1sec_after\" " | tee -a $log_path
                         	echo -n "--enddate=\"$startdate_1hour_after\" --aggregate=\"None\" " | tee -a $log_path
                         	echo -n "--maxoutput=\"$maxoutput\" --token=\"$token\" " | tee -a $log_path
@@ -405,7 +398,7 @@ else
 
                         	# Filename where possible boundary readings at the end of the gap is stored
                         	sne2_datum="data/${node}_${sourceids}_${startdate_1sec_after}_${startdate_1hour_after}_datum"
-                        	python3 solnet_query.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_1sec_after" \
+                        	python3 solnet_query_utc.py --node="$node" --sourceids="$sourceids" --startdate="$startdate_1sec_after" \
 					--enddate="$startdate_1hour_after" --aggregate="None" --maxoutput="$maxoutput" \
 					--token="$token" --secret="$secret" > $sne2_datum
 
@@ -428,15 +421,7 @@ else
 					sne2_endlocaldate=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $2}' )
                                 	sne2_endlocaltime=$(cat $sne2_datum | head -n 1 | awk -F ',' '{print $3}' )
                                 	sne2_utc_halfsec=$(echo $sne2_utcdatetime | awk -F ':' '{print $NF}' | sed 's/Z//g')
-					
-					if [[ "$sourceids" == *"PYR"* ]]; then
-                                         	sne2_start_reading=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $NF}')
-                                        elif [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"CON"* ]] ; then
-						sne2_start_reading=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $(NF-2)}')
-                                        else
-                                                echo "$(date +'%Y-%m-%d %H:%M:%S') Unable to determine type of datum from source ID" | tee -a $log_path
-                                                sne2_start_reading="Error Unable to determine type of datum from source ID"
-                                        fi
+                                        sne2_start_reading=$(cat $sne2_datum | head -n 1| awk -F ',' '{print $NF}')
                                 	
 					snevent2_start_end_datetime=$(date --date "$(date -Iseconds -d \
 						"$sne2_endlocaldate $sne2_endlocaltime:$sne2_utc_halfsec") - 5 seconds" +'%b %d, %Y %H:%M:%S')
