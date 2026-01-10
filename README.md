@@ -55,16 +55,16 @@
 
 ### Solnet Query UTC
 		
-- [ ] Lists PYR/GEN data based on a given date range in UTC
+- [ ] Lists PYR/GEN data based on a given date range in UTC, sorts, and prints wattHours and irradianceHours at the end
 		
 - [ ] Usage:		
 	```
-	solnet_query.py --node=[nodeid] --sourceids=[sourceids] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret]
+	solnet_query_utc.py --node=[nodeid] --sourceids=[sourceids] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret]
 	```
 		
 - [ ] Example:
 	```
-	python3 solnet_query.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --startdate="2024-05-01 00:00" --enddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890"
+	python3 solnet_query_utc.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --startdate="2024-05-01 00:00" --enddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890"
 	```
 
 ### Solnet Query Local
