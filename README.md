@@ -181,6 +181,21 @@
 	python3 solnet_store_auxiliary.py --node 465 --source "/NYVIII/ARCAD/RT1/PYR/2" --type "Reset" --created "2025-11-11 20:34:55Z" --notes "Discontinuity due to Gap - End Border" --final '{"a":{"wattHours":14308.58}}' --start '{"a":{"wattHours":4322142.833299}}' --token "foo" --secret "foobar"
 	```
 
+## Delete Auxiliary Records
+
+- [ ] Delete Auxiliary Records. The event date is the UTC date which is the date before the actual fill but after the date where the data ends for the date after the fill but before the date where data resumes. 
+
+- [ ] Usage:
+        ```
+        python3 solnet_delete_auxiliary.py --node [nodeid] --source [sourceid] --eventdate [UTC datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --token "foo" --secret "foobar"
+        ```
+
+- [ ] Example:
+        ```
+        python3 solnet_delete_auxiliary.py --node 465 --source "/NYVIII/ARCAD/RT1/PYR/2" --eventdate "2025-11-11 20:34:55Z"  --token "foo" --secret "foobar"
+        ```
+
+
 ## Solnet Manage Jobs
 		
 - [ ] 	Lists and delete expire jobs. It also wiews, previews, confirms, and deletes import jobs.   
