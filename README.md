@@ -55,30 +55,23 @@
 
 ### Solnet Query UTC
 		
-- [ ] Lists PYR/GEN data based on a given date range in UTC, sorts, and prints wattHours and irradianceHours at the end
+- [ ] Lists PYR/GEN data based on a given date range in UTC or local timezone. FOr utc, it sorts and prints wattHours and irradianceHours as the last columns.
 		
 - [ ] Usage:		
 	```
-	solnet_query_utc.py --node=[nodeid] --sourceids=[sourceids] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret]
+	solnet_query.py --atcion=[utc|local] --node=[nodeid] --sourceids=[sourceids] --startdate=[UTC start datetime in 'YYYY-MM-DD HH:MM:SS'] --enddate=[UTC end datetime in 'YYYY-MM-DD HH:MM:SS'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret]
+
+	Parameters for action=local
+	--localstartdate [start datetime in 'YYYY-MM-DD HH:MM:SS' in local timezone]
+        --localenddate [end datetime in 'YYYY-MM-DD HH:MM:SS' in local timezone]
+        --header always,never,auto] 
+        --output [filename]
+        --verbose
 	```
 		
 - [ ] Example:
 	```
-	python3 solnet_query_utc.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --startdate="2024-05-01 00:00" --enddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890"
-	```
-
-### Solnet Query Local
-
-- [ ] Lists PYR/GEN data based on a given date range in Local timezone
-                
-- [ ] Usage:          
-	```
-	solnet_query_local.py --node=[nodeid] --sourceids=[sourceids] --localstartdate=[Local start datetime in 'YYYY-MM-DD HH:MM'] --localenddate=[Local end datetime in 'YYYY-MM-DD HH:MM'] --aggregate=[Day|Hour|FiveMinute|None] --maxoutput=[Max Output] --token=[solnet token] --secret=[solnet secret] --output=[filename] --verbose
-	```                
-
-- [ ] Example:        
-	```
-	python3 solnet_query_local.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --localstartdate="2024-05-01 00:00" --localenddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890" --output="/tmp/file.csv" --verbose
+	python3 solnet_query.py --action="utc" --node="372" --sourceids="/G2/S2/S1/PYR/1" --startdate="2024-05-01 00:00" --enddate="2024-06-31 23:59" --aggregate="Day" --maxoutput="1000000" --token="ABCD1234" --secret="WXYZ7890"
 	```
 
 ## Solnet Expire Datum
