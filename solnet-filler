@@ -5,6 +5,20 @@ log() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') $*" | tee -a "$log_path"
 }
 
+# Confirmation function
+confirm_action() {
+    local prompt="$1"
+    while true; do
+        echo -n "$(date +'%Y-%m-%d %H:%M:%S') $prompt [Y/N]: "
+        read reply < /dev/tty
+        if [[ "${reply^^}" == "Y" || "${reply^^}" == "N" ]] ; then
+            log "User response: $reply"
+            echo "${reply^^}"
+            return
+        fi
+    done
+}
+
 while [ $# -gt 0 ] ; do
         case "$1" in
                 --node*|-n*)
@@ -82,7 +96,7 @@ else
 
 
         if [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"PYR"* ]] || [[ "$sourceids" == *"CON"* ]]; then
-                if [[ "$sourceids" == *"GEN"* ]] && [ $energyspike == 0 ] ; then
+                if [[ "$sourceids" == *"GEN"* ]] && [[ "$energyspike" -eq 0 ]] ; then
                         echo "$(date +'%Y-%m-%d %H:%M:%S') For GEN Fills, energyspike should be greater than 0"
                 else
                         log "Executed: /bin/bash solnet-filler --node $node --sourceid $sid --timezone $timezone --startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long --energyspike $energyspike --api $solcast_api_token --token $token --secret $secret"
@@ -150,19 +164,9 @@ else
                                         log "Confirm: python3 solnet_expire.py --action=\"confirm\" --node=\"$node\" --sourceids=\"$sourceids\" --localstartdate=\"$formatted_localstartdate\" --localenddate=\"$formatted_localenddate\" --token=\"$token\" --secret=\"$secret\""
 
                                         # Prompt user confrimation before deleting data
-                                        while true
-                                        do
+					continue_result=$(confirm_action "Would you like to remove the data between the gap now")
 
-                                                log "Would you like to remove the data between the gap now now (Y/N)?"
-                                                read continue_result < /dev/tty
-
-                                                if [[ "${continue_result^^}" == "Y" || "${continue_result^^}" == "N" ]] ; then
-                                                        log "Continue Result recevied $continue_result"
-                                                        break;
-                                                fi
-                                        done
-
-                                        if [[ "${continue_result^^}" == "Y" ]] ; then
+                                        if [[ "$continue_result" == "Y" ]] ; then
 
                                                 # Preview of the number of data to be deleted
                                                 log "Executing python3 solnet_expire.py --action=\"preview\" --node=\"$node\" --sourceids=\"$sourceids\" --localstartdate=\"$formatted_localstartdate\" --localenddate=\"$formatted_localenddate\" --token=\"$token\" --secret=\"$secret\""
@@ -297,7 +301,7 @@ else
                                 echo "....." | tee -a $log_path
                                 tail -n 5 $file_to_import | tee -a $log_path
                                 log "Compressing output file $file_to_import"
-                                dos2unix $file_to_import
+                                dos2unix "$file_to_import"
                                 sleep 1
                                 xz -k $file_to_import
                                 log "Process completed"
@@ -444,18 +448,11 @@ else
 
                                 log "To apply staged data, python3 solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" will be executed"
 
-                                while true
-                                do
-                                        echo -n "$(date +'%Y-%m-%d %H:%M:%S') Would You Like To Proceed To Apply Staged Data [Y/N]: "
-                                        read confirm_result < /dev/tty
+				# Prompt user confirmation before applying staged data
+                                confirm_result=$(confirm_action "Would You Like To Proceed To Apply Staged Data")
 
-                                        if [[ "${confirm_result^^}" == "Y" || "${confirm_result^^}" == "N" ]] ; then
-                                                log "Confirm Result recevied $confirm_result"
-                                                break;
-                                        fi
-                                done
 
-                                if [[ "${confirm_result^^}" == "Y" ]] ; then
+                                if [[ "$confirm_result" == "Y" ]] ; then
 
                                         if [ $datum_count -gt 0 ]; then
 
