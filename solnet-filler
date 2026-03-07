@@ -94,7 +94,7 @@ else
         log_path="data/solnet-filler-${runtime}.log"
         maxoutput=1000000
 
-
+	# Ensures that the source ID is for GEN/PYR fills and ensures an energy spike value greater than 0 is set if its a GEN fill
         if [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"PYR"* ]] || [[ "$sourceids" == *"CON"* ]]; then
                 if [[ "$sourceids" == *"GEN"* ]] && [[ "$energyspike" -eq 0 ]] ; then
                         echo "$(date +'%Y-%m-%d %H:%M:%S') For GEN Fills, energyspike should be greater than 0"
@@ -207,9 +207,6 @@ else
 
                                 # Solcast Download Process
 
-                                # File where the python commands to download solcast data will be stored.
-                                solcast_script_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_script.sh"
-
                                 # File where the result of the python commands to download solcast data will be stored.
                                 solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
                                 >$solcast_script_path
@@ -219,50 +216,13 @@ else
                                 solcast_start=$utcstartdate
                                 solcast_end=$utcenddate
 
-                                solcast_start_epoch=$(date -d "$solcast_start" +%s)
-                                solcast_end_epoch=$(date -d "$solcast_end" +%s)
-
-                                # Computes the difference between the start and end dates to determine the number of seconds between the date range.
-                                date_range_diff_seconds=$((solcast_end_epoch - solcast_start_epoch))
-
-                                # This condition checks if the date range exceeds the limit of 2592000  seconds which is 30 days
-                                # since there is a 30 day limit on date range per solcast download.
-
-                                if [ $date_range_diff_seconds -gt 2592000  ]; then
-
-                                        solcast_partial_end=$(TZ=UTC date --date "$solcast_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
-                                        log "Date range exceeds 30 days, creating multiple solcast queries"
-                                        echo "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_partial_end\" --token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
-
-                                        solcast_partial_start=$(TZ=UTC date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
-                                        solcast_partial_epoch=$(date -d "$solcast_partial_start" +%s )
-                                        date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
-
-                                        while [ $date_range_diff_seconds -gt 2592000 ]
-                                        do
-                                                if [ $date_range_diff_seconds -gt 2592000 ]; then
-
-                                                        solcast_partial_end=$(TZ=UTC date --date "$solcast_partial_start + 30 days" +'%Y-%m-%d %H:%M:%SZ')
-                                                        echo "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_partial_start\" --enddate=\"$solcast_partial_end\" --token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
-
-                                                        solcast_partial_start=$(TZ=UTC date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
-                                                        solcast_partial_epoch=$(date -d "$solcast_partial_start" +%s )
-                                                        date_range_diff_seconds=$((solcast_end_epoch - solcast_partial_epoch))
-                                                else
-                                                        solcast_partial_start=$(TZ=UTC date --date "$(date -Iseconds -d "$solcast_partial_end") + 1 second" +'%Y-%m-%d %H:%M:%SZ')
-                                                        break
-                                                fi
-                                        done
-
-                                        echo "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_partial_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" >> $solcast_csv_path" | tee -a $solcast_script_path
-                                else
-                                        echo "python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" > $solcast_csv_path" | tee -a $solcast_script_path
-                                fi
-
-                                log "Executing /bin/bash $solcast_script_path in 10 seconds. Hit Ctrl + C to Cancel"
-                                sleep 10
-                                /bin/bash $solcast_script_path
-                                log "Process Completed"
+                                log "Executing python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" > $solcast_csv_path in 10 seconds. Hit Ctrl + C to Cancel"
+                                
+				sleep 10
+				
+				python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" > $solcast_csv_path
+                                
+				log "Process Completed"
 
                                 if [[ "$sourceids" == *"PYR"* ]] ; then
                                         runtime=$(date +"%Y%m%d_%H%M%S")
