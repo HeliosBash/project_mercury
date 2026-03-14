@@ -205,50 +205,39 @@ else
                                         log "No Data Detected. Preparing Solcast Query Data"
                                 fi
 
-                                # Solcast Download Process
+                                # Solcast Download and Calculate IrradianceHours/WattHours
 
                                 # File where the result of the python commands to download solcast data will be stored.
                                 solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
                                 >$solcast_script_path
-
-                                # UTC date is used as it is  required when downloading solcast data. Date is converted to epoch to perform
-                                # aritmethtic operation with the date
-                                solcast_start=$utcstartdate
-                                solcast_end=$utcenddate
-
-                                log "Executing python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" > $solcast_csv_path in 10 seconds. Hit Ctrl + C to Cancel"
-                                
-				sleep 10
-				
-				python3 solcast_download.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" > $solcast_csv_path
-                                
-				log "Process Completed"
+				runtime=$(date +"%Y%m%d_%H%M%S")
 
                                 if [[ "$sourceids" == *"PYR"* ]] ; then
-                                        runtime=$(date +"%Y%m%d_%H%M%S")
                                         irradiance_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_PYRGAP_SolNetIMport_${runtime}.csv"
+					log "Executing python3 solcast_pipeline.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" --node=\"$node\" --sourceids=\"$sid\" --solcast_csv_path=\"$solcast_csv_path\" --irradiance_data_path=\"$irradiance_data_path\" in 10 seconds"
+					
+					sleep 10
 
-                                        log "Executing python3 calculate_irradiancehours.py --solcast_csv_path=\"$solcast_csv_path\" --irradiance_data_path=\"$irradiance_data_path\" --node=\"$node\" --sid=\"$sid\" in 10 seconds"
-
-                                        sleep 5
-
-                                        python3 calculate_irradiancehours.py --solcast_csv_path="$solcast_csv_path" --irradiance_data_path="$irradiance_data_path" \
-                                                --node="$node" --sid="$sid"
-
-
+					python3 solcast_pipeline.py --latitude="$lat" --longitude="$long" \
+						--startdate="$utcstartdate" --enddate="$utcenddate" \
+						--token="$solcast_api_token" --node="$node" --sourceids="$sid" \
+						--solcast_csv_path="$solcast_csv_path" \
+						--irradiance_data_path="$irradiance_data_path"
+					
                                         file_to_import=$irradiance_data_path
 
                                 elif [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"CON"* ]] ; then
-
                                         electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
-                                        runtime=$(date +"%Y%m%d_%H%M%S")
 
-                                        log "Executing python3 calculate_watthours.py --solcast_csv_path=\"$solcast_csv_path\" --energyspike=$energyspike --node=\"$node\" --sourceids=\"$sid\" --output=\"$electrical_energy_data_path\" in 10 seconds"
+					log "Executing python3 solcast_pipeline.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$solcast_start\" --enddate=\"$solcast_end\" --token=\"$solcast_api_token\" --node=\"$node\" --sourceids=\"$sid\" --solcast_csv_path=\"$solcast_csv_path\" --energyspike=\"$energyspike\" --electrical_energy_data_path=\"$electrical_energy_data_path\" in 10 seconds"
+					
+					sleep 10
 
-                                        sleep 10
-
-                                        python3 calculate_watthours.py --solcast_csv_path="$solcast_csv_path" --energyspike=$energyspike --node="$node" \
-                                                --sourceids="$sid" --output="$electrical_energy_data_path"
+					python3 solcast_pipeline.py --latitude="$lat" --longitude="$long" \
+						--startdate="$utcstartdate" --enddate="$utcenddate" \
+						--token="$solcast_api_token" --node="$node" --sourceids="$sid" \
+						--solcast_csv_path="$solcast_csv_path" --energyspike=$energyspike \
+						--electrical_energy_data_path="$electrical_energy_data_path"
 
                                         file_to_import=$electrical_energy_data_path
                                 else
