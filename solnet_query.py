@@ -55,7 +55,18 @@ def discover_columns(results_list):
     return columns_ordered
 
 def discover_columns_sorted(results_list):
-    """Discover columns with custom sorting (for UTC mode)"""
+    """Discover columns with custom sorting (for UTC mode).
+
+    Required order for bash script compatibility:
+      1. created       <- $1 (used for date parsing)
+      2. localDate     <- $2
+      3. localTime     <- $3
+      4. nodeId
+      5. sourceId
+      6. ... remaining regular columns alphabetically ...
+      7. irradiance / watts
+      8. irradianceHours / wattHours  <- $NF (must be last)
+    """
     all_keys = set()
     for results in results_list:
         if not results:
@@ -63,23 +74,18 @@ def discover_columns_sorted(results_list):
         for element in results:
             all_keys.update(element.keys())
 
-    # Sort keys with custom ordering - main columns alphabetically, then energy columns at the end
-    energy_columns = []
-    regular_columns = []
+    leading_columns = ['created', 'localDate', 'localTime', 'nodeId', 'sourceId']
 
-    for key in all_keys:
-        # Check if it's an energy accumulation column (should go at the end)
-        if key in ['irradiance', 'irradianceHours', 'watts', 'wattHours']:
-            energy_columns.append(key)
-        else:
-            regular_columns.append(key)
+    # Energy columns: value column first, accumulation column last ($NF)
+    trailing_columns = ['irradiance', 'watts', 'irradianceHours', 'wattHours']
 
-    # Sort each group alphabetically
-    regular_columns.sort()
-    energy_columns.sort()
+    reserved = set(leading_columns + trailing_columns)
+    middle_columns = sorted(key for key in all_keys if key not in reserved)
 
-    # Combine: regular columns first, then energy columns
-    return regular_columns + energy_columns
+    leading  = [col for col in leading_columns  if col in all_keys]
+    trailing = [col for col in trailing_columns if col in all_keys]
+
+    return leading + middle_columns + trailing
 
 def get_last_timestamp(last_record):
     """Extract the last timestamp from a record, using created field for seconds precision"""
