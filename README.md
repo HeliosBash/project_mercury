@@ -104,6 +104,28 @@
 	python3 solnet_import.py --node="372" --sourceids="/G2/S2/S1/PYR/1" --timezone="UTC" --compression="disabled" --filepath="data/372_%2FG2%2FS2%2FS1%2FPYR%2F1_PYRGAP_SolNetIMport_20240915_120914.csv" --token="ABCD1234" --secret="WXYZ7890"
 	```
 
+
+## Solnet Import Extended
+
+- [ ] Extends the original solnet_import.py to support CSV files with a larger number of data columns in the SolarNetwork extended format (Example columns created,nodeId,sourceId,localDate,localTime,watts,current,voltage,current_a,current_b,current_c,frequency,voltage_a,voltage_b,voltage_c,voltage_ab,voltage_bc,voltage_ca,lineVoltage,powerFactor,apparentPower,reactivePower,wattHours,wattHoursReverse,phase).
+
+- [ ] Header-aware column detection: automatically classifies columns as instantaneous, accumulating, or tag based on column names and sample values, no manual column mapping required
+
+- [ ] Supports variable CSV layouts without script changes
+
+- [ ] Timestamp normalization: strips trailing Z, pads milliseconds to 3 digits, and adds .000 for rows with no milliseconds
+
+- [ ] Timezone hardcoded to UTC since created column is already in UTC
+
+- [ ] tagDataColumns support for non-numeric/categorical columns
+
+- [ ] prints detected column mapping before import for verification
+
+- [ ] Example Usage:
+	```
+	python3 solnet_import.py --node="464" --sourceids="/MA2/MA2/MA2/GEN/1" --compression="disabled" --filepath="eco-1474-data-interchanged.csv" --token="a" --secret="b"
+	```
+
 ## Solcast Download
 		
 - [ ]	Downloads solcast data for a given GPS coordinate and date range. The maximum date range that can be set is 30 days.
