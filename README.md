@@ -184,11 +184,11 @@
 
 ## Store Auxiliary Records
 
-- [ ] Store Auxiliary Records
+- [ ]   Store Auxiliary Records
 
-- [ ] Usage:
-        ```
-        python3 solnet_store_auxiliary.py --node [nodeid] --source [sourceid] --type RESET --created [UTC datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --notes [description] --final [final watthours before created date] --start [starting watthours after created date]  --token "foo" --secret "foobar"
+- [ ]   Usage:
+	```
+	python3 solnet_store_auxiliary.py --node [nodeid] --source [sourceid] --type RESET --created [UTC datetime in 'YYYY-MM-DD HH:MM:SS.000Z'] --notes [description] --final [final watthours before created date] --start [starting watthours after created date]  --token "foo" --secret "foobar"
 	```
 
 - [ ] Example:
