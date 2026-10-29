@@ -126,6 +126,70 @@ class Client:
 
         return v["data"]
 
+    def deleteexpireconfig(self, configid):
+        now = datetime.utcnow()
+        date = get_x_sn_date(now)
+        path = f'/solaruser/api/v1/sec/user/expire/configs/data/{configid}'
+
+        headers = {"host": "data.solarnetwork.net", "x-sn-date": date}
+
+        auth = generate_auth_header(
+            self.token, self.secret, "DELETE", path, "", headers, "", now
+        )
+
+        url = f"https://data.solarnetwork.net{path}"
+        resp = requests.delete(
+            url,
+            headers={
+                "host": "data.solarnetwork.net",
+                "x-sn-date": date,
+                "Authorization": auth,
+            },
+        )
+
+        v = resp.json()
+        if v.get("success") != True:
+            raise Exception(f"Unsuccessful API call: {v.get('message', resp.text)}")
+
+        return v.get("data")
+
+    def listexpireconfigs(self):
+        now = datetime.utcnow()
+        date = get_x_sn_date(now)
+        path = '/solaruser/api/v1/sec/user/expire/configs'
+
+        headers = {"host": "data.solarnetwork.net", "x-sn-date": date}
+
+        auth = generate_auth_header(
+            self.token, self.secret, "GET", path, "", headers, "", now
+        )
+
+        url = f"https://data.solarnetwork.net{path}"
+        resp = requests.get(
+            url,
+            headers={
+                "host": "data.solarnetwork.net",
+                "x-sn-date": date,
+                "Authorization": auth,
+            },
+        )
+
+        print(f"[debug] {resp.request.method} {resp.url} -> {resp.status_code} {resp.headers.get('Content-Type')}")
+        print(f"[debug] body: {resp.text[:500]!r}")
+
+        if not resp.text.strip():
+            raise Exception(f"Empty response body (HTTP {resp.status_code})")
+
+        try:
+            v = resp.json()
+        except ValueError:
+            raise Exception(f"Non-JSON response (HTTP {resp.status_code}): {resp.text[:500]}")
+
+        if v.get("success") != True:
+            raise Exception(f"Unsuccessful API call: {v.get('message', resp.text)}")
+
+        return v.get("data")
+
     def listimportjobs(self) -> str:
         now = datetime.utcnow()
         date = get_x_sn_date(now)
