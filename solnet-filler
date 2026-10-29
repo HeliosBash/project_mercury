@@ -71,12 +71,22 @@ while [ $# -gt 0 ] ; do
                         if [[ "$1" != *=* ]]; then shift; fi
                         secret="${1#*=}"
                         ;;
+                --solcastcsv*|-f*)
+                        if [[ "$1" != *=* ]]; then shift; fi
+                        solcast_csv="${1#*=}"
+                        ;;
+                --startwatthours*|-w*)
+                        if [[ "$1" != *=* ]]; then shift; fi
+                        startwatthours="${1#*=}"
+                        ;;
                 --help|-h)
                         echo -n "Usage: solnet-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE]"
                         echo -n "--startdate|-s [STARTDATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [ENDDATETIME "
                         echo -n "in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] "
                         echo -n "--energyspike|-g [ENERGY SPIKE IN watthours] --api|-p [SOLCAST API TOKEN] --token|-k "
-                        echo "[SOLNET TOKEN] --secret|-c [SOLNET SECRET]"
+                        echo -n "[SOLNET TOKEN] --secret|-c [SOLNET SECRET] "
+                        echo -n "[--solcastcsv|-f [LOCAL SOLCAST CSV; skips the Solcast API, so -a, -o and -p become optional]] "
+                        echo "[--startwatthours|-w [STARTING wattHours for GEN/CON fills, default 0; use the previous fill's last wattHours to keep fills continuous]]"
                         exit 0
                         ;;
                 *)
@@ -88,11 +98,14 @@ while [ $# -gt 0 ] ; do
         shift
 done
 
-if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$enddatetime" || -z "$lat" || -z "$long" || -z "$energyspike" \
-        || -z "$solcast_api_token" || -z "$token" || -z "$secret" ]] ; then
+# --latitude, --longitude and --api are only required when no local Solcast CSV (--solcastcsv) is given
+if [[ -z "$node" || -z "$sid" || -z "$timezone" || -z "$startdatetime" || -z "$enddatetime" || -z "$energyspike" \
+        || -z "$token" || -z "$secret" ]] \
+   || { [[ -z "$solcast_csv" ]] && [[ -z "$lat" || -z "$long" || -z "$solcast_api_token" ]]; } ; then
 
         echo -n "Error: The following arguments are required --node --sourceid --timezone --startdatetime --enddatetime --latitude "
         echo "--longitude --energyspike --api --token --secret. For PYR Fills, set energyspike to 0"
+        echo "(--latitude, --longitude and --api are not required when --solcastcsv is given)"
 
 else
         sourceids=$(echo $sid | sed "s/\//%2F/g")
@@ -100,12 +113,12 @@ else
         log_path="data/solnet-filler-${runtime}.log"
         maxoutput=1000000
 
-	# Ensures that the source ID is for GEN/PYR fills and ensures an energy spike value greater than 0 is set if its a GEN fill
+        # Ensures that the source ID is for GEN/PYR fills and ensures an energy spike value greater than 0 is set if its a GEN fill
         if [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"PYR"* ]] || [[ "$sourceids" == *"CON"* ]]; then
                 if [[ "$sourceids" == *"GEN"* ]] && [[ "$energyspike" -eq 0 ]] ; then
                         echo "$(date +'%Y-%m-%d %H:%M:%S') For GEN Fills, energyspike should be greater than 0"
                 else
-                        log "Executed: /bin/bash solnet-filler --node $node --sourceid $sid --timezone $timezone --startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long --energyspike $energyspike --api $solcast_api_token --token $token --secret $secret"
+                        log "Executed: /bin/bash solnet-filler --node $node --sourceid $sid --timezone $timezone --startdatetime $startdatetime --enddatetime $enddatetime --latitude $lat --longitude $long --energyspike $energyspike --api $solcast_api_token --token $token --secret $secret --solcastcsv $solcast_csv --startwatthours ${startwatthours:-0}"
 
                         # Check timezone format if its valid
 
@@ -155,7 +168,7 @@ else
 
                         if [[ "$(cat data/${node}_${sourceids}_${startdate}_${enddate}_datum)" == *"Error"* ]] ; then
                                 log "$(cat data/${node}_${sourceids}_${startdate}_${enddate}_datum)"
-                                log "Usage: solnet-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [END DATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [ENERGY SPIKE IN watthours] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET]"
+                                log "Usage: solnet-filler [--help|-h] --node|-n [NODE] --sourceid|-i [SOURCE ID] --timezone|-z [TIMEZONE] --startdatetime|-s [START DATETIME in \"YYYY-MM-DD HH:MM\"] --enddatetime|-e [END DATETIME in \"YYYY-MM-DD HH:MM\"] --latitude|-a [LATITUDE] --longitude|-o [LONGITUDE] --energyspike|-g [ENERGY SPIKE IN watthours] --api|-p [SOLCAST API TOKEN] --token|-k [SOLNET TOKEN] --secret|-c [SOLNET SECRET] --solcastcsv|-f [LOCAL SOLCAST CSV]"
                         else
                                 # Process of deleting data between the date range
                                 if [ $datum_count -gt 0 ]; then
@@ -170,7 +183,7 @@ else
                                         log "Confirm: python3 solnet_expire.py --action=\"confirm\" --node=\"$node\" --sourceids=\"$sourceids\" --localstartdate=\"$formatted_localstartdate\" --localenddate=\"$formatted_localenddate\" --token=\"$token\" --secret=\"$secret\""
 
                                         # Prompt user confrimation before deleting data
-					continue_result=$(confirm_action "Would you like to remove the data between the gap now")
+                                        continue_result=$(confirm_action "Would you like to remove the data between the gap now")
 
                                         if [[ "$continue_result" == "Y" ]] ; then
 
@@ -215,34 +228,44 @@ else
 
                                 # File where the result of the python commands to download solcast data will be stored.
                                 solcast_csv_path="data/${node}_${sourceids}_${lat}_${long}_${startdate}_${enddate}_solcast_result.csv"
-				runtime=$(date +"%Y%m%d_%H%M%S")
+                                runtime=$(date +"%Y%m%d_%H%M%S")
+
+                                # Arguments for solcast_pipeline.py that depend on where the Solcast data comes from:
+                                #   --solcastcsv given -> read the local CSV (filtered to the gap window), no API call
+                                #   otherwise          -> download from the Solcast API
+                                if [[ -n "$solcast_csv" ]] ; then
+                                        if [[ ! -f "$solcast_csv" ]] ; then
+                                                log "Solcast CSV $solcast_csv not found"
+                                                exit 1
+                                        fi
+                                        log "Using local Solcast CSV $solcast_csv (skipping Solcast API)"
+                                        solcast_args=(--input_csv="$solcast_csv" --startdate="$utcstartdate" --enddate="$utcenddate")
+                                else
+                                        solcast_args=(--latitude="$lat" --longitude="$long" --startdate="$utcstartdate" --enddate="$utcenddate" \
+                                                --token="$solcast_api_token" --solcast_csv_path="$solcast_csv_path")
+                                fi
 
                                 if [[ "$sourceids" == *"PYR"* ]] ; then
                                         irradiance_data_path="data/${node}_${sourceids}_${startdate}_${enddate}_PYRGAP_SolNetIMport_${runtime}.csv"
-					log "Executing python3 solcast_pipeline.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$utcstartdate\" --enddate=\"$utcenddate\" --token=\"$solcast_api_token\" --node=\"$node\" --sourceids=\"$sid\" --solcast_csv_path=\"$solcast_csv_path\" --irradiance_data_path=\"$irradiance_data_path\" in 10 seconds"
-					
-					sleep 10
+                                        log "Executing python3 solcast_pipeline.py ${solcast_args[*]} --node=\"$node\" --sourceids=\"$sid\" --irradiance_data_path=\"$irradiance_data_path\" in 10 seconds"
 
-					python3 solcast_pipeline.py --latitude="$lat" --longitude="$long" \
-						--startdate="$utcstartdate" --enddate="$utcenddate" \
-						--token="$solcast_api_token" --node="$node" --sourceids="$sid" \
-						--solcast_csv_path="$solcast_csv_path" \
-						--irradiance_data_path="$irradiance_data_path"
-					
+                                        sleep 10
+
+                                        python3 solcast_pipeline.py "${solcast_args[@]}" --node="$node" --sourceids="$sid" \
+                                                --irradiance_data_path="$irradiance_data_path"
+
                                         file_to_import=$irradiance_data_path
 
                                 elif [[ "$sourceids" == *"GEN"* ]] || [[ "$sourceids" == *"CON"* ]] ; then
                                         electrical_energy_data_path="data/${node}_${sourceids}_EEGAP_SolNetIMport_${runtime}.csv"
 
-					log "Executing python3 solcast_pipeline.py --latitude=\"$lat\" --longitude=\"$long\" --startdate=\"$utcstartdate\" --enddate=\"$utcenddate\" --token=\"$solcast_api_token\" --node=\"$node\" --sourceids=\"$sid\" --solcast_csv_path=\"$solcast_csv_path\" --energyspike=\"$energyspike\" --electrical_energy_data_path=\"$electrical_energy_data_path\" in 10 seconds"
-					
-					sleep 10
+                                        log "Executing python3 solcast_pipeline.py ${solcast_args[*]} --node=\"$node\" --sourceids=\"$sid\" --energyspike=\"$energyspike\" --startwatthours=\"${startwatthours:-0}\" --electrical_energy_data_path=\"$electrical_energy_data_path\" in 10 seconds"
 
-					python3 solcast_pipeline.py --latitude="$lat" --longitude="$long" \
-						--startdate="$utcstartdate" --enddate="$utcenddate" \
-						--token="$solcast_api_token" --node="$node" --sourceids="$sid" \
-						--solcast_csv_path="$solcast_csv_path" --energyspike=$energyspike \
-						--electrical_energy_data_path="$electrical_energy_data_path"
+                                        sleep 10
+
+                                        python3 solcast_pipeline.py "${solcast_args[@]}" --node="$node" --sourceids="$sid" \
+                                                --energyspike=$energyspike --startwatthours="${startwatthours:-0}" \
+                                                --electrical_energy_data_path="$electrical_energy_data_path"
 
                                         file_to_import=$electrical_energy_data_path
                                 else
@@ -402,7 +425,7 @@ else
 
                                 log "To apply staged data, python3 solnet_manage_jobs.py --job=\"import\" --action=\"confirm\" --token=\"$token\" --secret=\"$secret\" --jobid=\"$jobid\" will be executed"
 
-				# Prompt user confirmation before applying staged data
+                                # Prompt user confirmation before applying staged data
                                 confirm_result=$(confirm_action "Would You Like To Proceed To Apply Staged Data")
 
 
@@ -427,6 +450,9 @@ else
                                                                 --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 
                                                         log "Execute python3 solnet_manage_jobs.py --job=\"import\" --action=\"list\" --token=\"$token\" --secret=\"$secret\" to view import progress"
+                                                        log "Store Auxiliary Script for Event 1: python3 solnet_store_auxiliary.py --node $node --source \"$sid\" --type \"Reset\" --created \"$snevent1_utc_start_end_datetime\" --notes \"Discontinuity due to Gap - Start Border\" --final '{\"a\":{\"wattHours\":$sne1_final_reading}}' --start '{\"a\":{\"wattHours\":$sne1_start_reading}}' --token \"$token\" --secret \"$secret\""
+                                                        log "Store Auxiliary Script for Event 2: python3 solnet_store_auxiliary.py --node $node --source \"$sid\" --type \"Reset\" --created \"$snevent2_utc_start_end_datetime\" --notes \"Discontinuity due to Gap - End Border\" --final '{\"a\":{\"wattHours\":$sne2_final_reading}}' --start '{\"a\":{\"wattHours\":$sne2_start_reading}}' --token \"$token\" --secret \"$secret\""
+
 
                                                 else
                                                         log "Process aborted. Expire process not completed. Run manually."
@@ -439,7 +465,10 @@ else
                                                  python3 solnet_manage_jobs.py --job="import" --action="confirm" --token="$token"\
                                                          --secret="$secret" --jobid="$jobid" 2>&1 | tee -a $log_path
 
-                                                 log "Execute python3 solnet_manage_jobs.py --job=\"import\" --action=\"list\" --token=\"$token\" --secret=\"$secret\" to view import progress"
+                                                 log "Execute python3 solnet_manage_jobs.py --job=\"import\" --action=\"list\" --token=\"$token\" --secret=\"$secret\" | grep $jobid to view import progress"
+                                                 log "Store Auxiliary Script for Event 1: python3 solnet_store_auxiliary.py --node $node --source \"$sid\" --type \"Reset\" --created \"$snevent1_utc_start_end_datetime\" --notes \"Discontinuity due to Gap - Start Border\" --final '{\"a\":{\"wattHours\":$sne1_final_reading}}' --start '{\"a\":{\"wattHours\":$sne1_start_reading}}' --token \"$token\" --secret \"$secret\""
+                                                 log "Store Auxiliary Script for Event 2: python3 solnet_store_auxiliary.py --node $node --source \"$sid\" --type \"Reset\" --created \"$snevent2_utc_start_end_datetime\" --notes \"Discontinuity due to Gap - End Border\" --final '{\"a\":{\"wattHours\":$sne2_final_reading}}' --start '{\"a\":{\"wattHours\":$sne2_start_reading}}' --token \"$token\" --secret \"$secret\""
+						
 
                                         fi
                                 else
@@ -455,3 +484,4 @@ else
         fi
 
 fi
+
